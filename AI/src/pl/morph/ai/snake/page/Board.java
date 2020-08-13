@@ -242,7 +242,7 @@ public class Board extends JPanel implements ActionListener {
                     for (var i = 0; i < outputs.size(); i++) {
                         out[0] = outputs.get(i);
                     }
-                    snake.getBrain().fit(in, out, 100);
+                    snake.getBrain().fit(in, out, 10);
                     networks.add(snake.getBrain());
                 }
 

@@ -208,29 +208,59 @@ public class Snake implements ActionListener {
         double[] input = see();
         inputs.add(input);
         double[] predict = brain.predict(input);
+        brain.train(input, predict);
         outputs.add(predict);
         double max = -1;
+        double secondMax = -1;
         int bestIndex = 0;
+        int secondIndex = 0;
         for (int i = 0; i < predict.length; i++) {
             Double aDouble = predict[i];
             if (aDouble > max) {
                 max = aDouble;
                 bestIndex = i;
+            } else {
+                if (aDouble > secondMax) {
+                    secondMax = aDouble;
+                    secondIndex = i;
+                }
             }
         }
 
         int value = bestIndex + 1;
-        if (value == 1) {
-            direction = Direction.LEFT;
-        } else if (value == 2) {
-            direction = Direction.RIGHT;
-        } else if (value == 3) {
-            direction = Direction.UP;
-        } else if (value == 4) {
-            direction = Direction.DOWN;
-        } else {
-            throw new Exception("THINKING FAILED");
+        boolean canRun = runIntoDirection(value);
+        if (!canRun) {
+            value = secondIndex + 1;
+            boolean b = runIntoDirection(value);
+            if (!b) {
+                System.out.println("ERROR!!!");
+            }
         }
+    }
+
+    private boolean runIntoDirection(int value) {
+        if (value == 1) {
+            if (direction.canMoveThere(Direction.LEFT)) {
+                direction = Direction.LEFT;
+                return true;
+            }
+        } else if (value == 2) {
+            if (direction.canMoveThere(Direction.RIGHT)) {
+                direction = Direction.RIGHT;
+                return true;
+            }
+        } else if (value == 3) {
+            if (direction.canMoveThere(Direction.UP)) {
+                direction = Direction.UP;
+                return true;
+            }
+        } else if (value == 4) {
+            if (direction.canMoveThere(Direction.DOWN)) {
+                direction = Direction.DOWN;
+                return true;
+            }
+        }
+        return false;
     }
 
     public void checkCollision() {
@@ -274,7 +304,7 @@ public class Snake implements ActionListener {
         // 0.5 empty
         // 1 - apple
         double[] see = new double[4];
-        if (x[0] - dotSize < 0) {
+        if (x[0] - dotSize <= 0) {
             see[0] = 0;
         } else if (x[0] - dotSize == appleToEat.getApple_x() && y[0] == appleToEat.getApple_y()) {
             see[0] = 1;
@@ -282,7 +312,7 @@ public class Snake implements ActionListener {
             see[0] = 0.5;
         }
 
-        if (x[0] + dotSize > boardWidth) {
+        if (x[0] + dotSize >= boardWidth) {
             see[1] = 0;
         } else if (x[0] + dotSize == appleToEat.getApple_x() && y[0] == appleToEat.getApple_y()) {
             see[1] = 1;
@@ -290,7 +320,7 @@ public class Snake implements ActionListener {
             see[1] = 0.5;
         }
 
-        if (y[0] + dotSize > boardHeight) {
+        if (y[0] + dotSize >= boardHeight) {
             see[2] = 0;
         } else if (y[0] + dotSize == appleToEat.getApple_y() && x[0] == appleToEat.getApple_x()) {
             see[2] = 1;
@@ -298,7 +328,7 @@ public class Snake implements ActionListener {
             see[2] = 0.5;
         }
 
-        if (y[0] - dotSize > 0) {
+        if (y[0] - dotSize >= 0) {
             see[3] = 0;
         } else if (y[0] - dotSize == appleToEat.getApple_y() && x[0] == appleToEat.getApple_x()) {
             see[3] = 1;
