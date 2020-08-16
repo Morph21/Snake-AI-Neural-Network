@@ -1,6 +1,8 @@
 package pl.morph.ai.snake.element;
 
+import javafx.scene.layout.Pane;
 import pl.morph.ai.snake.engine.NeuralNetwork;
+import pl.morph.ai.snake.page.Board;
 import pl.morph.ai.snake.page.Scores;
 
 import javax.swing.*;
@@ -14,7 +16,7 @@ import java.util.Random;
 import static java.lang.Math.floor;
 import static java.lang.Math.pow;
 
-public class Snake implements ActionListener {
+public class Snake {
     private final int boardWidth;
     private final int boardHeight;
     //Maximum length of snake
@@ -24,41 +26,75 @@ public class Snake implements ActionListener {
     //Max random y coord where apple can be spawned
     private final int rand_pos_y;
     //Size of dot
-    private final int dotSize = 10;
+    private final int dotSize;
     private Apple appleToEat;
-    private int length = 3;
+    private int length = 4;
     private int x[];
     private int y[];
     private Score snakeScore;
     private long lifetime = 0;
     private long timeLeft = 200;
+    private long maxLife = 500;
+    private long lifeForApple = timeLeft / 2;
     private double fitness = 0;
     public boolean inGame = true;
-    public Direction direction = randomDirection();
-    private Timer timer;
+    public Direction direction = Direction.RIGHT;
     private NeuralNetwork brain;
-    private List<double[]> inputs = new ArrayList<>();
-    private List<double[]> outputs = new ArrayList<>();
+    private boolean showIt = false;
+    private boolean humanPlaying;
+    private int delay;
+    private List<Apple> foodList = new ArrayList<>();
+    private int foodIterate = 0;
+    private boolean bestSnake = false;
+    private Scores scores;
+    private boolean wallCollide = false;
+    private boolean bodyCollide = false;
 
-    public Snake(int boardWidth, int boardHeight, int delay, boolean humanPlaying) {
+    private int hidden_layers = 4;
+    private int hidden_nodes = 20;
+    private double mutationRate = 0.05;
+
+    final int input_count = 28;
+    double vision[] = new double[input_count];
+    double decision[] = new double[3];
+
+    public Snake(int boardWidth, int boardHeight, int delay, boolean humanPlaying, List<Apple> foodList, int dotSize) {
+        this.dotSize = dotSize;
+        this.delay = delay;
+        this.humanPlaying = humanPlaying;
+        this.mutationRate = Board.MUTATION_RATE;
         this.boardWidth = boardWidth;
         this.boardHeight = boardHeight;
-        max_length = (boardWidth * boardHeight) / 100;
+        max_length = (boardWidth * boardHeight) / (dotSize * dotSize);
         this.x = new int[max_length];
         this.y = new int[max_length];
-        this.rand_pos_x = boardWidth / 10;
-        this.rand_pos_y = boardHeight / 10;
+        this.rand_pos_x = boardWidth / dotSize;
+        this.rand_pos_y = boardHeight / dotSize;
 
+
+        if (foodList != null) {
+            this.foodList = foodList;
+        }
         if (!humanPlaying) {
-            brain = new NeuralNetwork(4, 12, 4);
+            brain = new NeuralNetwork(input_count, hidden_nodes, 3, hidden_layers);
         }
 
         snakeScore = new Score();
-        if (timer != null) {
-            timer.stop();
-        }
-        timer = new Timer(delay, this);
-        timer.start();
+        snakeScore.setScore(1);
+    }
+
+    public Snake cloneThis() {  //clone the snake
+        Snake clone = new Snake(boardWidth, boardHeight, delay, humanPlaying, null, dotSize);
+        clone.brain = brain.clone();
+        clone.fitness = fitness;
+        return clone;
+    }
+
+    public Snake cloneForReplay() {  //clone a version of the snake that will be used for a replay
+        Snake clone = new Snake(boardWidth, boardHeight, delay, humanPlaying, foodList, dotSize);
+        clone.brain = brain.clone();
+        clone.fitness = fitness;
+        return clone;
     }
 
     public Apple getAppleToEat() {
@@ -106,33 +142,83 @@ public class Snake implements ActionListener {
      * Creates new apple;
      */
     public void spawnApple() {
+        if (!bestSnake) {
+
+            appleToEat = randomizeApple();
+            for (int i = 0; i < length; i++) {
+                while (appleToEat.getApple_x() == x[i] && appleToEat.getApple_y() == y[i]) {
+                    appleToEat = randomizeApple();
+                }
+            }
+            foodList.add(appleToEat);
+        } else {
+            appleToEat = foodList.get(foodIterate);
+            foodIterate++;
+        }
+    }
+
+    private Apple randomizeApple() {
         int r = (int) (Math.random() * rand_pos_x);
         int apple_x = ((r * dotSize));
 
         r = (int) (Math.random() * rand_pos_y);
         int apple_y = ((r * dotSize));
-        appleToEat = new Apple(apple_x, apple_y);
+        return new Apple(apple_x, apple_y);
     }
 
     public void doDrawing(Graphics g) {
         if (inGame) {
-            g.setColor(Color.red);
-            g.fillRect(appleToEat.getApple_x(), appleToEat.getApple_y(), 10, 10);
+            if (showIt) {
+                g.setColor(Color.red);
+                g.fillRect(appleToEat.getApple_x(), appleToEat.getApple_y(), dotSize - 1, dotSize - 1);
+                g.setColor(Color.black);
+                g.drawRect(appleToEat.getApple_x(), appleToEat.getApple_y(), dotSize, dotSize);
+            }
 
             for (int z = 0; z < length; z++) {
                 if (z == 0) {
                     //head
-                    g.setColor(Color.green);
-                    g.fillRect(x[z], y[z], 10, 10);
+                    if (this.showIt) {
+                        g.setColor(Color.green);
+                        g.fillRect(x[z], y[z], dotSize - 1, dotSize - 1);
+                        g.setColor(Color.black);
+                        g.drawRect(x[z], y[z], dotSize, dotSize);
+                    }
                 } else {
                     //tail
-                    g.setColor(Color.white);
-                    g.fillRect(x[z], y[z], 10, 10);
+                    if (this.showIt) {
+                        g.setColor(Color.white);
+                        g.fillRect(x[z], y[z], dotSize - 1, dotSize - 1);
+                        g.setColor(Color.black);
+                        g.drawRect(x[z], y[z], dotSize, dotSize);
+                    }
+
                 }
             }
-            Toolkit.getDefaultToolkit().sync();
+//            Toolkit.getDefaultToolkit().sync();
         } else {
-            timer.stop();
+            if (bestSnake) {
+                for (int z = 0; z < length; z++) {
+                    if (z == 0) {
+                        //head
+                        if (this.showIt) {
+                            g.setColor(Color.CYAN);
+                            g.fillRect(x[z], y[z], dotSize - 1, dotSize - 1);
+                            g.setColor(Color.black);
+                            g.drawRect(x[z], y[z], dotSize, dotSize);
+                        }
+                    } else {
+                        //tail
+                        if (this.showIt) {
+                            g.setColor(Color.gray);
+                            g.fillRect(x[z], y[z], dotSize - 1, dotSize - 1);
+                            g.setColor(Color.black);
+                            g.drawRect(x[z], y[z], dotSize, dotSize);
+                        }
+
+                    }
+                }
+            }
             //TODO: What should it do when it's game over for him
         }
     }
@@ -144,7 +230,12 @@ public class Snake implements ActionListener {
 
         // Snake head collided with apple
         if ((x[0] == appleToEat.getApple_x()) && (y[0] == appleToEat.getApple_y())) {
+            increaseLifeSpan();
             snakeScore.addScore();
+            if (bestSnake && scores != null) {
+                scores.addPoint();
+            }
+
             length++;
             spawnApple();
         }
@@ -157,140 +248,109 @@ public class Snake implements ActionListener {
 
         // Snake head collided with apple
         if ((x[0] == appleToEat.getApple_x()) && (y[0] == appleToEat.getApple_y())) {
-            if (timeLeft < 500) {
-                timeLeft += 100;
-            }
+            increaseLifeSpan();
             scores.addPoint();
             length++;
             spawnApple();
         }
     }
 
-    private void calculateFitness() {  //calculate the fitness of the snake
-        if(snakeScore.getScore() < 10) {
-            fitness = floor(lifetime * lifetime) * pow(2,snakeScore.getScore());
+    public void increaseLifeSpan() {
+        if (timeLeft < maxLife) {
+            timeLeft += lifeForApple;
+        }
+    }
+
+    public void calculateFitness() {  //calculate the fitness of the snake
+        if (snakeScore.getScore() < 10) {
+            fitness = floor(lifetime * lifetime) * pow(5, snakeScore.getScore());
         } else {
             fitness = floor(lifetime * lifetime);
-            fitness *= pow(2,10);
-            fitness *= (snakeScore.getScore()-9);
+            fitness *= pow(2, 10);
+            fitness *= (snakeScore.getScore() - 9);
+        }
+
+        if (wallCollide || bodyCollide) {
+            fitness -= 100*100;
+        }
+        if (fitness > brain.getHighestFitness()) {
+            brain.setHighestFitness(fitness);
         }
     }
+//    public void calculateFitness() {  //calculate the fitness of the snake
+//        fitness = 200 * snakeScore.getScore() + 5 * lifetime;
+//    }
+//
+//    public void calculateFitness() {  //calculate the fitness of the snake
+//        fitness = lifetime + (pow(2, snakeScore.getScore()) + pow(snakeScore.getScore(), 2.1) * 500) - (pow(snakeScore.getScore(), 1.2) * pow((0.25 * lifetime), 1.3));
+//    }
 
-    public void move() {
-        lifetime++;
-        timeLeft--;
-        if (timeLeft <= 0) {
-            inGame = false;
-        }
-        for (int z = length; z > 0; z--) {
-            x[z] = x[(z - 1)];
-            y[z] = y[(z - 1)];
-        }
-
-        switch (direction) {
-            case LEFT:
-                x[0] -= dotSize;
-                break;
-            case RIGHT:
-                x[0] += dotSize;
-                break;
-            case UP:
-                y[0] -= dotSize;
-                break;
-            case DOWN:
-                y[0] += dotSize;
-                break;
-
-        }
+    public Snake crossover(Snake parent) {  //crossover the snake with another snake
+        Snake child = new Snake(boardWidth, boardHeight, delay, humanPlaying, null, dotSize);
+        child.brain = brain.crossover(parent.brain);
+        return child;
     }
 
-    public void think() throws Exception {
-        double[] input = see();
-        inputs.add(input);
-        double[] predict = brain.predict(input);
-        brain.train(input, predict);
-        outputs.add(predict);
-        double max = -1;
-        double secondMax = -1;
-        int bestIndex = 0;
-        int secondIndex = 0;
-        for (int i = 0; i < predict.length; i++) {
-            Double aDouble = predict[i];
-            if (aDouble > max) {
-                max = aDouble;
-                bestIndex = i;
-            } else {
-                if (aDouble > secondMax) {
-                    secondMax = aDouble;
-                    secondIndex = i;
-                }
-            }
-        }
-
-        int value = bestIndex + 1;
-        boolean canRun = runIntoDirection(value);
-        if (!canRun) {
-            value = secondIndex + 1;
-            boolean b = runIntoDirection(value);
-            if (!b) {
-                System.out.println("ERROR!!!");
-            }
-        }
+    public void mutate() {  //mutate the snakes brain
+        brain.mutate(mutationRate);
     }
 
-    private boolean runIntoDirection(int value) {
-        if (value == 1) {
-            if (direction.canMoveThere(Direction.LEFT)) {
-                direction = Direction.LEFT;
-                return true;
-            }
-        } else if (value == 2) {
-            if (direction.canMoveThere(Direction.RIGHT)) {
-                direction = Direction.RIGHT;
-                return true;
-            }
-        } else if (value == 3) {
-            if (direction.canMoveThere(Direction.UP)) {
-                direction = Direction.UP;
-                return true;
-            }
-        } else if (value == 4) {
-            if (direction.canMoveThere(Direction.DOWN)) {
-                direction = Direction.DOWN;
-                return true;
+    public void think() {
+        decision = brain.output(vision);
+        int maxIndex = 0;
+        double max = 0;
+        for (int i = 0; i < decision.length; i++) {
+            if (decision[i] > max) {
+                max = decision[i];
+                maxIndex = i;
             }
         }
-        return false;
+        checkDirection(maxIndex);
     }
 
-    public void checkCollision() {
 
-        for (int z = length; z > 0; z--) {
-
-            if ((z > 2) && (x[0] == x[z]) && (y[0] == y[z])) {
+    public void move() {  //move the snake
+        if (inGame) {
+            if (!humanPlaying) {
+                lifetime++;
+                timeLeft--;
+            }
+            if (foodCollide(x[0], y[0])) {
+                checkApple();
+            }
+            if (timeLeft <= 0) {
                 inGame = false;
             }
-        }
+            for (int z = length; z > 0; z--) {
+                x[z] = x[(z - 1)];
+                y[z] = y[(z - 1)];
+            }
+            switch (direction) {
+                case LEFT:
+                    x[0] -= dotSize;
+                    break;
+                case RIGHT:
+                    x[0] += dotSize;
+                    break;
+                case UP:
+                    y[0] -= dotSize;
+                    break;
+                case DOWN:
+                    y[0] += dotSize;
+                    break;
 
-        if (y[0] >= boardHeight) {
-            inGame = false;
-        }
+            }
 
-        if (y[0] < 0) {
-            inGame = false;
-        }
+            if (wallCollide(x[0], y[0])) {
+                wallCollide = true;
+                inGame = false;
+            } else if (bodyCollide(x[0], y[0])) {
+                bodyCollide = true;
+                inGame = false;
+            } else if (timeLeft <= 0 && !humanPlaying) {
+                inGame = false;
+            }
 
-        if (x[0] >= boardWidth) {
-            inGame = false;
-        }
-
-        if (x[0] < 0) {
-            inGame = false;
-        }
-
-        if (!inGame) {
-            timer.stop();
-            calculateFitness();
         }
     }
 
@@ -298,54 +358,142 @@ public class Snake implements ActionListener {
         return snakeScore.getScore();
     }
 
-    private double[] see() {
-        // LEFT, RIGHT, DOWN, UP
-        // 0 - wall or tail
-        // 0.5 empty
-        // 1 - apple
-        double[] see = new double[4];
-        if (x[0] - dotSize <= 0) {
-            see[0] = 0;
-        } else if (x[0] - dotSize == appleToEat.getApple_x() && y[0] == appleToEat.getApple_y()) {
-            see[0] = 1;
-        } else {
-            see[0] = 0.5;
-        }
+    public void look() {  //look in all 8 directions and check for food, body and wall
+        vision = new double[input_count];
+        double[] temp = lookInDirection(-dotSize, 0); // LEFT
+        vision[0] = temp[0];
+        vision[1] = temp[1];
+        vision[2] = temp[2];
+        temp = lookInDirection(-dotSize, -dotSize); // LEFT TOP
+        vision[3] = temp[0];
+        vision[4] = temp[1];
+        vision[5] = temp[2];
+        temp = lookInDirection(0, -dotSize); // TOP
+        vision[6] = temp[0];
+        vision[7] = temp[1];
+        vision[8] = temp[2];
+        temp = lookInDirection(dotSize, -dotSize); // RIGHT TOP
+        vision[9] = temp[0];
+        vision[10] = temp[1];
+        vision[11] = temp[2];
+        temp = lookInDirection(dotSize, 0); // RIGHT
+        vision[12] = temp[0];
+        vision[13] = temp[1];
+        vision[14] = temp[2];
+        temp = lookInDirection(dotSize, dotSize); // RIGHT DOWN
+        vision[15] = temp[0];
+        vision[16] = temp[1];
+        vision[17] = temp[2];
+        temp = lookInDirection(0, dotSize); // DOWN
+        vision[18] = temp[0];
+        vision[19] = temp[1];
+        vision[20] = temp[2];
+        temp = lookInDirection(-dotSize, dotSize);//LEFT DONW
+        vision[21] = temp[0];
+        vision[22] = temp[1];
+        vision[23] = temp[2];
 
-        if (x[0] + dotSize >= boardWidth) {
-            see[1] = 0;
-        } else if (x[0] + dotSize == appleToEat.getApple_x() && y[0] == appleToEat.getApple_y()) {
-            see[1] = 1;
-        } else {
-            see[1] = 0.5;
+        switch (direction) {
+            case RIGHT:
+                vision[24] = 1;
+                vision[25] = 0;
+                vision[26] = 0;
+                vision[27] = 0;
+                break;
+            case UP:
+                vision[24] = 0;
+                vision[25] = 1;
+                vision[26] = 0;
+                vision[27] = 0;
+                break;
+            case DOWN:
+                vision[24] = 0;
+                vision[25] = 0;
+                vision[26] = 1;
+                vision[27] = 0;
+                break;
+            case LEFT:
+                vision[24] = 0;
+                vision[25] = 0;
+                vision[26] = 0;
+                vision[27] = 1;
+                break;
         }
-
-        if (y[0] + dotSize >= boardHeight) {
-            see[2] = 0;
-        } else if (y[0] + dotSize == appleToEat.getApple_y() && x[0] == appleToEat.getApple_x()) {
-            see[2] = 1;
-        } else {
-            see[2] = 0.5;
-        }
-
-        if (y[0] - dotSize >= 0) {
-            see[3] = 0;
-        } else if (y[0] - dotSize == appleToEat.getApple_y() && x[0] == appleToEat.getApple_x()) {
-            see[3] = 1;
-        } else {
-            see[3] = 0.5;
-        }
-
-        return see;
     }
 
-    @Override
-    public void actionPerformed(ActionEvent e) {
+    double[] lookInDirection(int X, int Y) {  //look in a direction and check for food, body and wall
+        double look[] = new double[3];
 
+        int head_x = x[0];
+        int head_y = y[0];
+
+        float distance = 0;
+        boolean foodFound = false;
+        boolean bodyFound = false;
+        head_x += X;
+        head_y += Y;
+        distance += 1;
+        while (!wallCollide(head_x, head_y)) {
+            if (!foodFound && foodCollide(head_x, head_y)) {
+                foodFound = true;
+                look[0] = distance;
+            }
+            if (!bodyFound && bodyCollide(head_x, head_y)) {
+                bodyFound = true;
+                look[1] = 1 / distance;
+            }
+
+            head_x += X;
+            head_y += Y;
+            distance += 1;
+        }
+
+        look[2] = 1 / distance;
+        return look;
     }
+
+    boolean bodyCollide(double X, double Y) {  //check if a position collides with the snakes body
+        for (int i = 1; i < length; i++) {
+            if (X == x[i] && Y == y[i]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    boolean foodCollide(double X, double Y) {  //check if a position collides with the food
+        if (X == appleToEat.getApple_x() && Y == appleToEat.getApple_y()) {
+            return true;
+        }
+        return false;
+    }
+
+    boolean wallCollide(double X, double Y) {  //check if a position collides with the wall
+        if (X >= boardWidth || X < 0 || Y >= boardHeight || Y < 0) {
+            return true;
+        }
+        return false;
+    }
+
+    public double calculateDistanceBetweenPoints(
+            double x1,
+            double y1,
+            double x2,
+            double y2) {
+        return -Math.sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
+    }
+
+//    @Override
+//    public void actionPerformed(ActionEvent e) {
+//
+//    }
 
     public double getFitness() {
         return fitness;
+    }
+
+    public double getHighestFitness() {
+        return brain.getHighestFitness();
     }
 
     public Snake setFitness(double fitness) {
@@ -362,37 +510,80 @@ public class Snake implements ActionListener {
         return this;
     }
 
-    public List<double[]> getInputs() {
-        return inputs;
-    }
-
-    public Snake setInputs(List<double[]> inputs) {
-        this.inputs = inputs;
-        return this;
-    }
-
-    public List<double[]> getOutputs() {
-        return outputs;
-    }
-
-    public Snake setOutputs(List<double[]> outputs) {
-        this.outputs = outputs;
-        return this;
-    }
-
-    private Direction randomDirection() {
+    public Direction randomDirection() {
         Random generator = new Random();
-        int value = generator.nextInt( 4 ) + 1;
-        if (value == 1) {
-            direction = Direction.LEFT;
-        } else if (value == 2) {
-            direction = Direction.RIGHT;
-        } else if (value == 3) {
-            direction = Direction.UP;
-        } else if (value == 4) {
-            direction = Direction.DOWN;
-        }
+        int value = generator.nextInt(3) + 1;
+        checkDirection(value);
 
         return direction;
     }
+
+    private void checkDirection(int value) {
+        if (value == 1) { // LEFT
+            switch (direction) {
+                case LEFT:
+                    direction = Direction.DOWN;
+                    break;
+                case DOWN:
+                    direction = Direction.RIGHT;
+                    break;
+                case UP:
+                    direction = Direction.LEFT;
+                    break;
+                case RIGHT:
+                    direction = Direction.UP;
+                    break;
+            }
+        } else if (value == 2) { // RIGHT
+            switch (direction) {
+                case LEFT:
+                    direction = Direction.UP;
+                    break;
+                case DOWN:
+                    direction = Direction.LEFT;
+                    break;
+                case UP:
+                    direction = Direction.RIGHT;
+                    break;
+                case RIGHT:
+                    direction = Direction.DOWN;
+                    break;
+            }
+        } else if (value == 3) { // MOVE FORWARD
+        }
+    }
+
+
+    public void setShowIt(boolean showIt) {
+        this.showIt = showIt;
+    }
+
+    public double getMutationRate() {
+        return mutationRate;
+    }
+
+    public void setMutationRate(double mutationRate) {
+        this.mutationRate = mutationRate;
+    }
+
+    public int getDelay() {
+        return delay;
+    }
+
+    public void setDelay(int delay) {
+        this.delay = delay;
+    }
+
+    public boolean isBestSnake() {
+        return bestSnake;
+    }
+
+    public void setBestSnake(boolean bestSnake) {
+        this.bestSnake = bestSnake;
+    }
+
+    public void setScores(Scores scores) {
+        this.scores = scores;
+    }
+
 }

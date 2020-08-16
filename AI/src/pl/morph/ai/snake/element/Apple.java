@@ -26,4 +26,9 @@ public class Apple {
         this.apple_y = apple_y;
         return this;
     }
+
+    public Apple clone() {
+        Apple apple = new Apple(apple_x, apple_y);
+        return apple;
+    }
 }

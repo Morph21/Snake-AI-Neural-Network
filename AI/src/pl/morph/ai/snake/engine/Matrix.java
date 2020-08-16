@@ -1,138 +1,151 @@
 package pl.morph.ai.snake.engine;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Random;
+
+import static java.lang.Math.floor;
 
 public class Matrix {
-    double[][] data;
-    int rows;
-    int cols;
+    int rows, cols;
+    double[][] matrix;
 
-    public Matrix(int rows, int cols) {
-        data = new double[rows][cols];
-        this.rows = rows;
-        this.cols = cols;
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                data[i][j] = Math.random() * 2 - 1;
-            }
-        }
+    public Matrix(int r, int c) {
+        rows = r;
+        cols = c;
+        matrix = new double[rows][cols];
     }
 
-    public void add(double scaler) {
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                this.data[i][j] += scaler;
-            }
-        }
+    public Matrix(double[][] m) {
+        matrix = m;
+        rows = matrix.length;
+        cols = matrix[0].length;
     }
 
-    public void add(Matrix m) {
-        if (cols != m.cols || rows != m.rows) {
-            System.out.println("Shape Mismatch");
-            return;
-        }
+    Matrix dot(Matrix n) {
+        Matrix result = new Matrix(rows, n.cols);
 
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                this.data[i][j] += m.data[i][j];
-            }
-        }
-    }
-
-    public static Matrix subtract(Matrix a, Matrix b) {
-        Matrix temp = new Matrix(a.rows, a.cols);
-        for (int i = 0; i < a.rows; i++) {
-            for (int j = 0; j < a.cols; j++) {
-                temp.data[i][j] = a.data[i][j] - b.data[i][j];
-            }
-        }
-        return temp;
-    }
-
-    public static Matrix transpose(Matrix a) {
-        Matrix temp = new Matrix(a.cols, a.rows);
-        for (int i = 0; i < a.rows; i++) {
-            for (int j = 0; j < a.cols; j++) {
-                temp.data[j][i] = a.data[i][j];
-            }
-        }
-        return temp;
-    }
-
-    public static Matrix multiply(Matrix a, Matrix b) {
-        Matrix temp = new Matrix(a.rows, b.cols);
-        for (int i = 0; i < temp.rows; i++) {
-            for (int j = 0; j < temp.cols; j++) {
-                double sum = 0;
-                for (int k = 0; k < a.cols; k++) {
-                    sum += a.data[i][k] * b.data[k][j];
+        if (cols == n.rows) {
+            for (int i = 0; i < rows; i++) {
+                for (int j = 0; j < n.cols; j++) {
+                    double sum = 0;
+                    for (int k = 0; k < cols; k++) {
+                        sum += matrix[i][k] * n.matrix[k][j];
+                    }
+                    result.matrix[i][j] = sum;
                 }
-                temp.data[i][j] = sum;
             }
         }
-        return temp;
+        return result;
     }
 
-    public void multiply(Matrix a) {
-        for (int i = 0; i < a.rows; i++) {
-            for (int j = 0; j < a.cols; j++) {
-                this.data[i][j] *= a.data[i][j];
-            }
-        }
-    }
-
-    public void multiply(double a) {
+    void randomize() {
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                this.data[i][j] *= a;
+                matrix[i][j] = random(-1, 1);
             }
         }
     }
 
-    public void sigmoid() {
+    Matrix singleColumnMatrixFromArray(double[] arr) {
+        Matrix n = new Matrix(arr.length, 1);
+        for (int i = 0; i < arr.length; i++) {
+            n.matrix[i][0] = arr[i];
+        }
+        return n;
+    }
+
+    double[] toArray() {
+        double[] arr = new double[rows * cols];
         for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++)
-                this.data[i][j] = 1 / (1 + Math.exp(-this.data[i][j]));
+            for (int j = 0; j < cols; j++) {
+                arr[j + i * cols] = matrix[i][j];
+            }
+        }
+        return arr;
+    }
+
+    Matrix addBias() {
+        Matrix n = new Matrix(rows + 1, 1);
+        for (int i = 0; i < rows; i++) {
+            n.matrix[i][0] = matrix[i][0];
+        }
+        n.matrix[rows][0] = 1;
+        return n;
+    }
+
+    Matrix activate() {
+        Matrix n = new Matrix(rows, cols);
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                n.matrix[i][j] = relu(matrix[i][j]);
+            }
+        }
+        return n;
+    }
+
+    double relu(double x) {
+        return Math.max(0, x);
+    }
+
+    void mutate(double mutationRate) {
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                double rand = random(0,1);
+                if (rand < mutationRate) {
+                    matrix[i][j] += randomGaussian() / 5;
+
+                    if (matrix[i][j] > 1) {
+                        matrix[i][j] = 1;
+                    }
+                    if (matrix[i][j] < -1) {
+                        matrix[i][j] = -1;
+                    }
+                }
+            }
         }
     }
 
-    public Matrix dsigmoid() {
-        Matrix temp = new Matrix(rows, cols);
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++)
-                temp.data[i][j] = this.data[i][j] * (1 - this.data[i][j]);
-        }
-        return temp;
-    }
+    Matrix crossover(Matrix partner) {
+        Matrix child = new Matrix(rows, cols);
 
-    public static Matrix fromArray(double[] x) {
-        Matrix temp = new Matrix(x.length, 1);
-        for (int i = 0; i < x.length; i++)
-            temp.data[i][0] = x[i];
-        return temp;
-
-    }
-
-    public List<Double> toList() {
-        List<Double> temp = new ArrayList<>();
+        int randC = (int) floor(random(0,cols));
+        int randR = (int) floor(random(0,rows));
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                temp.add(data[i][j]);
+                if ((i < randR) || (i == randR && j <= randC)) {
+                    child.matrix[i][j] = matrix[i][j];
+                } else {
+                    child.matrix[i][j] = partner.matrix[i][j];
+                }
             }
         }
-        return temp;
+        return child;
     }
 
-    public double[] toArray() {
-        double[] temp = new double[rows];
-
+    public Matrix clone() {
+        Matrix clone = new Matrix(rows, cols);
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                temp[i] =data[i][j];
+                clone.matrix[i][j] = matrix[i][j];
             }
         }
-        return temp;
+        return clone;
     }
+
+    private static double randomGaussian() {
+        Random r = new Random();
+        return r.nextGaussian();
+    }
+
+    private static double random(int from, int to) {
+        Random r = new Random();
+        return from + (to - from) * r.nextDouble();
+    }
+
+    public static double random(double from, double to) {
+        Random r = new Random();
+        return from + (to - from) * r.nextDouble();
+    }
+
+
 }

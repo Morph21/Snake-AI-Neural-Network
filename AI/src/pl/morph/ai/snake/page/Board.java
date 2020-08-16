@@ -3,50 +3,58 @@ package pl.morph.ai.snake.page;
 import pl.morph.ai.snake.element.Direction;
 import pl.morph.ai.snake.element.Score;
 import pl.morph.ai.snake.element.Snake;
+import pl.morph.ai.snake.engine.Matrix;
 import pl.morph.ai.snake.engine.NeuralNetwork;
 
 import javax.swing.*;
+import javax.swing.Timer;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class Board extends JPanel implements ActionListener {
 
-    private final int B_WIDTH = 300;
-    private final int B_HEIGHT = 300;
+    private final int B_WIDTH = 800;
+    private final int B_HEIGHT = 800;
 
     //Speed of snake
-    private int DELAY = 1;
+    private int DELAY = 0;
+    private int DOT_SIZE = 40;
 
     private Snake snake;
+    private Snake bestSnake;
+    private int bestSnakeScore;
     private List<Snake> snakes;
     private int highScore = 0;
+    private double bestFitness;
+    private double fitnessSum;
+    private int samebest = 0;
+    public static double MUTATION_RATE = 0.15;
+    public static double SAVE_SNAKE_RATIO = 0.5;
 
     private boolean humanPlaying;
+    private boolean showOnlyFirstSnake = false;
 
     private boolean resetByPressingSpace;
     private int AISnakes;
 
     private Scores scores;
 
-    private Timer timer;
+    public static Timer timer;
 
     public Board(Scores scores, boolean humanPlaying, Integer AINumber) {
         this.humanPlaying = humanPlaying;
         this.scores = scores;
         if (humanPlaying) {
             initBoard(null);
-            DELAY = 80;
         } else {
             initBoard(AINumber);
             AISnakes = AINumber;
-            DELAY = 0;
         }
     }
 
@@ -77,28 +85,11 @@ public class Board extends JPanel implements ActionListener {
         timer.start();
     }
 
-    private void initGameWithBrains(Integer AINumber, List<NeuralNetwork> brains) {
-        resetByPressingSpace = false;
-
-        setBackground(Color.black);
-        setFocusable(true);
-
-        setPreferredSize(new Dimension(B_WIDTH, B_HEIGHT));
-
-        createAISnakesWithBrains(AINumber, brains);
-
-        if (timer != null) {
-            timer.stop();
-        }
-        timer = new Timer(DELAY, this);
-        timer.start();
-    }
-
     private void createHumanSnake() {
-        this.snake = new Snake(B_WIDTH, B_HEIGHT, DELAY, humanPlaying);
+        this.snake = new Snake(B_WIDTH, B_HEIGHT, DELAY, humanPlaying, null, DOT_SIZE);
 
         for (int z = 0; z < snake.getLength(); z++) {
-            snake.getX()[z] = 50 - z * 10;
+            snake.getX()[z] = 50 - z * DOT_SIZE;
             snake.getY()[z] = 50;
         }
 
@@ -110,34 +101,16 @@ public class Board extends JPanel implements ActionListener {
 
         for (int i = 0; i < AINumber; i++) {
 
-            this.snake = new Snake(B_WIDTH, B_HEIGHT, DELAY, humanPlaying);
+            this.snake = new Snake(B_WIDTH, B_HEIGHT, DELAY, humanPlaying, null, DOT_SIZE);
 
             placeSnakeOnMiddle();
-
-            snake.spawnApple();
-            snakes.add(snake);
-        }
-    }
-
-    private void createAISnakesWithBrains(int AINumber, List<NeuralNetwork> brains) {
-        snakes = new ArrayList<>();
-
-        for (int i = 0; i < brains.size(); i++) {
-            if (snakes.size() < AINumber) {
-                NeuralNetwork neuralNetwork = brains.get(0);
-                this.snake = new Snake(B_WIDTH, B_HEIGHT, DELAY, humanPlaying);
-                placeSnakeOnMiddle();
-                snake.setBrain(neuralNetwork);
-                snake.spawnApple();
-                snakes.add(snake);
-
+            if (showOnlyFirstSnake) {
+                if (snakes.size() == 0) {
+                    this.snake.setShowIt(true);
+                }
+            } else {
+                this.snake.setShowIt(true);
             }
-        }
-        while (snakes.size() < AINumber) {
-            this.snake = new Snake(B_WIDTH, B_HEIGHT, DELAY, humanPlaying);
-
-            placeSnakeOnMiddle();
-
             snake.spawnApple();
             snakes.add(snake);
         }
@@ -145,8 +118,15 @@ public class Board extends JPanel implements ActionListener {
 
     public void placeSnakeOnMiddle() {
         for (int z = 0; z < snake.getLength(); z++) {
-            snake.getX()[z] = B_WIDTH/2 - z * 10;
-            snake.getY()[z] = B_HEIGHT/2;
+            snake.getX()[z] = B_WIDTH / 2 - z * DOT_SIZE;
+            snake.getY()[z] = B_HEIGHT / 2;
+        }
+    }
+
+    public void placeSnakeOnMiddle(Snake snake) {
+        for (int z = 0; z < snake.getLength(); z++) {
+            snake.getX()[z] = B_WIDTH / 2 - z * DOT_SIZE;
+            snake.getY()[z] = B_HEIGHT / 2;
         }
     }
 
@@ -162,7 +142,7 @@ public class Board extends JPanel implements ActionListener {
             }
         } else {
             for (Snake snake : snakes) {
-                if (snake.inGame) {
+                if (snake.inGame || snake.isBestSnake()) {
                     snake.doDrawing(g);
                 }
             }
@@ -192,20 +172,20 @@ public class Board extends JPanel implements ActionListener {
         if (humanPlaying) {
             if (snake.inGame) {
                 snake.checkApple(scores);
-                snake.checkCollision();
+//                snake.checkCollision();
                 snake.move();
             }
         } else {
             int deadSnakes = 0;
             for (Snake snake : snakes) {
+                if (snake.isBestSnake()) {
+                    scores.setScore((new Score()).setScore(snake.getScore()));
+                }
                 if (snake.inGame) {
-                    snake.checkApple();
-                    snake.checkCollision();
-                    try {
-                        snake.think();
-                    } catch (Exception exception) {
-                        exception.printStackTrace();
-                    }
+                    snake.look();
+                    snake.think();
+                    snake.move();
+
                     if (snake.getScore() > highScore) {
                         highScore = snake.getScore();
                         scores.setHighestScore(highScore);
@@ -214,43 +194,121 @@ public class Board extends JPanel implements ActionListener {
                     if (snake.getFitness() > scores.getHighestFitness()) {
                         scores.setHighestFitness(snake.getFitness());
                     }
-                    snake.move();
                 } else {
                     deadSnakes++;
                 }
             }
+            scores.setDeadSnakes(deadSnakes);
             if (deadSnakes == AISnakes) {
+                repaint();
+                timer.stop();
                 scores.resetScores();
-                scores.increseGeneration();
-                List<Snake> collected = snakes.stream()
-                                              .sorted(Comparator.comparingDouble(Snake::getFitness).reversed())
-                                              .collect(Collectors.toList());
-                List<Snake> bestSnakes = new ArrayList<>();
-                for (int i = 0; i < AISnakes * 0.90; i++) {
-                    bestSnakes.add(collected.get(i));
-                }
+                calculateFitness();
+                naturalSelection();
+                scores.setHighestFitness(bestFitness);
+                System.out.println(bestFitness);
+                System.out.println(bestFitness * 2);
+                timer.restart();
 
-                List<NeuralNetwork> networks = new ArrayList<>();
-                for (Snake snake : bestSnakes) {
-                    List<double[]> inputs = snake.getInputs();
-                    double[][] in = new double[inputs.size()][4];
-                    for (var i = 0; i < inputs.size(); i++) {
-                        in[0] = inputs.get(i);
-                    }
-                    List<double[]> outputs = snake.getOutputs();
-                    double[][] out = new double[outputs.size()][4];
-                    for (var i = 0; i < outputs.size(); i++) {
-                        out[0] = outputs.get(i);
-                    }
-                    snake.getBrain().fit(in, out, 10);
-                    networks.add(snake.getBrain());
-                }
-
-                initGameWithBrains(AISnakes, networks);
             }
         }
 
         repaint();
+    }
+
+    void calculateFitness() {  //calculate the fitnesses for each snake
+        for (Snake snake : snakes) {
+            snake.calculateFitness();
+        }
+    }
+
+    void naturalSelection() {
+        List<Snake> newSnakes = new ArrayList<>();
+
+        setBestSnake();
+        calculateFitnessSum();
+
+        Snake best = bestSnake.cloneForReplay();
+        best.setBestSnake(true);
+        best.setScores(scores);
+        best.setShowIt(true);
+        best.spawnApple();
+        placeSnakeOnMiddle(best);
+
+        newSnakes.add(best);  //add the best 9snake of the prior generation into the new generation
+        snakes.sort(Comparator.comparingDouble(Snake::getFitness).reversed());
+        while (newSnakes.size() != AISnakes) {
+            for (int i = 1; i < snakes.size() * SAVE_SNAKE_RATIO; i++) {
+                Snake snakey = selectParent().crossover(selectParent());
+                snakey = snakey.cloneThis();
+                snakey.mutate();
+                NeuralNetwork brain = snakey.getBrain();
+                snakey = new Snake(B_WIDTH, B_HEIGHT, DELAY, humanPlaying, null, DOT_SIZE);
+                snakey.setBrain(brain);
+                snakey.setBestSnake(false);
+                snakey.setScores(null);
+                placeSnakeOnMiddle(snakey);
+                if (showOnlyFirstSnake) {
+                    if (newSnakes.size() == 0) {
+                        snakey.setShowIt(true);
+                    }
+                } else {
+                    snakey.setShowIt(true);
+                }
+                snakey.spawnApple();
+                newSnakes.add(i, snakey);
+                if (newSnakes.size()==AISnakes) {
+                    break;
+                }
+            }
+        }
+        snakes = null;
+        snakes = newSnakes;
+        scores.increseGeneration();
+    }
+
+    void calculateFitnessSum() {  //calculate the sum of all the snakes fitnesses
+        fitnessSum = 0;
+        for (Snake snake : snakes) {
+            fitnessSum += snake.getFitness();
+        }
+    }
+
+    Snake selectParent() {  //selects a random number in range of the fitnesssum and if a snake falls in that range then select it
+        double rand = Matrix.random(0, fitnessSum);
+        double summation = 0;
+        for (int i = 0; i < snakes.size() * SAVE_SNAKE_RATIO; i++) {
+            summation += snakes.get(i).getFitness();
+            if (summation > rand) {
+                return snakes.get(i);
+            }
+        }
+        return snakes.get(0);
+    }
+
+    void setBestSnake() {  //set the best snake of the generation
+        double max = 0;
+        int maxIndex = 0;
+        for (int i = 0; i < snakes.size(); i++) {
+            Snake snake = snakes.get(i);
+            if (snake.getFitness() > max) {
+                max = snake.getFitness();
+                maxIndex = i;
+            }
+        }
+        if (max > bestFitness) {
+            bestFitness = max;
+            bestSnake = snakes.get(maxIndex).cloneForReplay();
+            bestSnakeScore = snakes.get(maxIndex).getScore();
+        } else {
+            bestSnake = bestSnake.cloneForReplay();
+
+            samebest++;
+            if (samebest > 2) {  //if the best snake has remained the same for more than 3 generations, raise the mutation rate
+                bestSnake.setMutationRate(bestSnake.getMutationRate() * 2);
+                samebest = 0;
+            }
+        }
     }
 
     private class TAdapter extends KeyAdapter {
@@ -282,6 +340,52 @@ public class Board extends JPanel implements ActionListener {
                     initGame(null);
                     repaint();
                 }
+            } else {
+                if (key == KeyEvent.VK_S) {
+                    showOnlyFirstSnake = !showOnlyFirstSnake;
+                    int i = 0;
+                    for (Snake snake : snakes) {
+                        if (showOnlyFirstSnake) {
+                            if (i == 0) {
+                                snake.setShowIt(true);
+                            } else {
+                                snake.setShowIt(false);
+                            }
+                            i++;
+                        } else {
+                            snake.setShowIt(true);
+                        }
+                    }
+                }
+
+                if (key == KeyEvent.VK_D) {
+                    if (DELAY == 0) {
+                        DELAY = 70;
+                    } else {
+                        DELAY = 0;
+                    }
+                    timer.setDelay(DELAY);
+                }
+
+                if (key == 107) {
+                    MUTATION_RATE += 0.01;
+                    repaint();
+                }
+
+                if (key == 109) {
+                    MUTATION_RATE -= 0.01;
+                    repaint();
+                }
+
+                if (key == KeyEvent.VK_P) {
+                    timer.stop();
+                }
+
+                if (key == KeyEvent.VK_R) {
+                    timer.start();
+                }
+
+
             }
 
         }
