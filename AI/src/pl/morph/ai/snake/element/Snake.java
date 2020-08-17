@@ -1,14 +1,11 @@
 package pl.morph.ai.snake.element;
 
-import javafx.scene.layout.Pane;
 import pl.morph.ai.snake.engine.NeuralNetwork;
 import pl.morph.ai.snake.page.Board;
 import pl.morph.ai.snake.page.Scores;
 
-import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -16,7 +13,7 @@ import java.util.Random;
 import static java.lang.Math.floor;
 import static java.lang.Math.pow;
 
-public class Snake {
+public class Snake implements Serializable {
     private final int boardWidth;
     private final int boardHeight;
     //Maximum length of snake
@@ -34,8 +31,8 @@ public class Snake {
     private Score snakeScore;
     private long lifetime = 0;
     private long timeLeft = 100;
-    private long maxLife = 300;
-    private long lifeForApple = timeLeft / 2;
+    private long maxLife;
+    private long lifeForApple;
     private double fitness = 0;
     public boolean inGame = true;
     public Direction direction = Direction.RIGHT;
@@ -50,13 +47,14 @@ public class Snake {
     private boolean wallCollide = false;
     private boolean bodyCollide = false;
 
-    private int hidden_layers = 4;
-    private int hidden_nodes = 20;
-    private double mutationRate = 0.05;
+    private int hidden_layers = 2;
+    private int hidden_nodes = 22;
+    private double mutationRate;
 
     final int input_count = 28;
+    final int output_count = 3;
     double vision[] = new double[input_count];
-    double decision[] = new double[3];
+    double decision[] = new double[output_count];
 
     public Snake(int boardWidth, int boardHeight, int delay, boolean humanPlaying, List<Apple> foodList, int dotSize) {
         this.dotSize = dotSize;
@@ -70,13 +68,15 @@ public class Snake {
         this.y = new int[max_length];
         this.rand_pos_x = boardWidth / dotSize;
         this.rand_pos_y = boardHeight / dotSize;
-
+        this.maxLife = boardWidth;
+        timeLeft = (boardWidth / dotSize / 2) * 10;
+        this.lifeForApple = timeLeft / 2;
 
         if (foodList != null) {
             this.foodList = foodList;
         }
         if (!humanPlaying) {
-            brain = new NeuralNetwork(input_count, hidden_nodes, 3, hidden_layers);
+            brain = new NeuralNetwork(input_count, hidden_nodes, output_count, hidden_layers);
         }
 
         snakeScore = new Score();
@@ -261,29 +261,31 @@ public class Snake {
         }
     }
 
-    public void calculateFitness() {  //calculate the fitness of the snake
-        fitness = floor(lifetime * lifetime) * pow(5, snakeScore.getScore());
-//        if (snakeScore.getScore() < 10) {
-//        } else {
-//            fitness = floor(lifetime * lifetime);
-//            fitness *= pow(2, 10);
-//            fitness *= (snakeScore.getScore() - 9);
+//    public void calculateFitness() {  //calculate the fitness of the snake
+//        fitness = floor(lifetime * lifetime) * pow(5, snakeScore.getScore());
+//
+////        if (snakeScore.getScore() < 10) {
+////            fitness = floor(lifetime * lifetime) * pow(2, snakeScore.getScore());
+////        } else {
+////            fitness = floor(lifetime * lifetime);
+////            fitness *= pow(2, 10);
+////            fitness *= (snakeScore.getScore() - 9);
+////        }
+//        if (wallCollide || bodyCollide) {
+//            fitness /= 4;
 //        }
-
-        if (wallCollide || bodyCollide) {
-            fitness -= 100 * 100;
-        }
-        if (fitness > brain.getHighestFitness()) {
-            brain.setHighestFitness(fitness);
-        }
-    }
+//
+//        if (fitness > brain.getHighestFitness()) {
+//            brain.setHighestFitness(fitness);
+//        }
+//    }
 //    public void calculateFitness() {  //calculate the fitness of the snake
 //        fitness = 200 * snakeScore.getScore() + 5 * lifetime;
 //    }
-//
-//    public void calculateFitness() {  //calculate the fitness of the snake
-//        fitness = lifetime + (pow(2, snakeScore.getScore()) + pow(snakeScore.getScore(), 2.1) * 500) - (pow(snakeScore.getScore(), 1.2) * pow((0.25 * lifetime), 1.3));
-//    }
+
+    public void calculateFitness() {  //calculate the fitness of the snake
+        fitness = lifetime + (pow(2, snakeScore.getScore()) + pow(snakeScore.getScore(), 2.1) * 500) - (pow(snakeScore.getScore(), 1.2) * pow((0.25 * lifetime), 1.3));
+    }
 
     public Snake crossover(Snake parent) {  //crossover the snake with another snake
         Snake child = new Snake(boardWidth, boardHeight, delay, humanPlaying, null, dotSize);
@@ -422,7 +424,7 @@ public class Snake {
     }
 
     double[] lookInDirection(int X, int Y) {  //look in a direction and check for food, body and wall
-        double look[] = new double[3];
+        double look[] = new double[output_count];
 
         int head_x = x[0];
         int head_y = y[0];
@@ -436,7 +438,7 @@ public class Snake {
         while (!wallCollide(head_x, head_y)) {
             if (!foodFound && foodCollide(head_x, head_y)) {
                 foodFound = true;
-                look[0] = distance;
+                look[0] = 1;
             }
             if (!bodyFound && bodyCollide(head_x, head_y)) {
                 bodyFound = true;
@@ -512,11 +514,23 @@ public class Snake {
 
     public Direction randomDirection() {
         Random generator = new Random();
-        int value = generator.nextInt(3) + 1;
+        int value = generator.nextInt(output_count) + 1;
         checkDirection(value);
 
         return direction;
     }
+
+//    private void checkDirection(int value) {
+//        if (value == 1) {
+//            direction = Direction.LEFT;
+//        } else if (value == 2) {
+//            direction = Direction.RIGHT;
+//        } else if (value == 3) {
+//            direction = Direction.UP;
+//        } else if (value == 4) {
+//            direction = Direction.DOWN;
+//        }
+//    }
 
     private void checkDirection(int value) {
         if (value == 1) { // LEFT
@@ -585,5 +599,4 @@ public class Snake {
     public void setScores(Scores scores) {
         this.scores = scores;
     }
-
 }

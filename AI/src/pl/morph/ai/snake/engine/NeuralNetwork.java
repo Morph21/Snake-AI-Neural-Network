@@ -1,8 +1,9 @@
 package pl.morph.ai.snake.engine;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class NeuralNetwork {
+public class NeuralNetwork implements Serializable {
 
     private double highestFitness = 0;
 

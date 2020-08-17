@@ -8,11 +8,13 @@ import pl.morph.ai.snake.engine.NeuralNetwork;
 
 import javax.swing.*;
 import javax.swing.Timer;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.io.*;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,7 +26,10 @@ public class Board extends JPanel implements ActionListener {
 
     //Speed of snake
     private int DELAY = 0;
+    //Size of snake
     private int DOT_SIZE = 40;
+
+    private String SAVE_PATH = "/home/kgruszczynski/Repo/AI";
 
     private Snake snake;
     private Snake bestSnake;
@@ -34,14 +39,17 @@ public class Board extends JPanel implements ActionListener {
     private double bestFitness;
     private double fitnessSum;
     private int samebest = 0;
-    public static double MUTATION_RATE = 0.3;
-    public static double SAVE_SNAKE_RATIO = 0.1;
+    public static double MUTATION_RATE = 0.05;
+    public static double SAVE_SNAKE_RATIO = 0.5;
 
     private boolean humanPlaying;
-    private boolean showOnlyFirstSnake = false;
+    private boolean showOnlyFirstSnake = true;
 
     private boolean resetByPressingSpace;
     private int AISnakes;
+    public static boolean autoSave = false;
+    private boolean saveWaiting = false;
+    private String fileName =  null;
 
     private Scores scores;
 
@@ -73,6 +81,7 @@ public class Board extends JPanel implements ActionListener {
         setPreferredSize(new Dimension(B_WIDTH, B_HEIGHT));
 
         if (humanPlaying) {
+            DELAY = 100;
             createHumanSnake();
         } else {
             createAISnakes(AINumber);
@@ -82,16 +91,13 @@ public class Board extends JPanel implements ActionListener {
             timer.stop();
         }
         timer = new Timer(DELAY, this);
-        timer.start();
+//        timer.start();
     }
 
     private void createHumanSnake() {
         this.snake = new Snake(B_WIDTH, B_HEIGHT, DELAY, humanPlaying, null, DOT_SIZE);
-
-        for (int z = 0; z < snake.getLength(); z++) {
-            snake.getX()[z] = 50 - z * DOT_SIZE;
-            snake.getY()[z] = 50;
-        }
+        this.snake.setShowIt(true);
+        placeSnakeOnMiddle(this.snake);
 
         snake.spawnApple();
     }
@@ -189,6 +195,7 @@ public class Board extends JPanel implements ActionListener {
                     if (snake.getScore() > highScore) {
                         highScore = snake.getScore();
                         scores.setHighestScore(highScore);
+                        saveWaiting = true;
                     }
 
                     if (snake.getFitness() > scores.getHighestFitness()) {
@@ -199,15 +206,17 @@ public class Board extends JPanel implements ActionListener {
                 }
             }
             scores.setDeadSnakes(deadSnakes);
-            if (deadSnakes == AISnakes) {
-                repaint();
+            scores.repaint();
+            if (deadSnakes >= AISnakes) {
                 timer.stop();
                 scores.resetScores();
                 calculateFitness();
                 naturalSelection();
                 scores.setHighestFitness(bestFitness);
-                System.out.println(bestFitness);
-                System.out.println(bestFitness * 2);
+                System.out.println(bestSnakeScore + ". " + bestFitness);
+                if (autoSave && (saveWaiting)) {
+                    autoSave();
+                }
                 timer.restart();
 
             }
@@ -303,11 +312,6 @@ public class Board extends JPanel implements ActionListener {
         } else {
             bestSnake = bestSnake.cloneForReplay();
 
-            samebest++;
-            if (samebest > 2) {  //if the best snake has remained the same for more than 3 generations, raise the mutation rate
-                bestSnake.setMutationRate(bestSnake.getMutationRate() * 2);
-                samebest = 0;
-            }
         }
     }
 
@@ -317,6 +321,13 @@ public class Board extends JPanel implements ActionListener {
         public void keyPressed(KeyEvent e) {
 
             int key = e.getKeyCode();
+            if (key == KeyEvent.VK_P) {
+                timer.stop();
+            }
+
+            if (key == KeyEvent.VK_R) {
+                timer.start();
+            }
 
             if (humanPlaying) {
                 if (key == KeyEvent.VK_LEFT) {
@@ -368,21 +379,37 @@ public class Board extends JPanel implements ActionListener {
                 }
 
                 if (key == 107) {
-                    MUTATION_RATE += 0.01;
-                    repaint();
+                    MUTATION_RATE *= 2;
+                    scores.repaint();
                 }
 
                 if (key == 109) {
-                    MUTATION_RATE -= 0.01;
-                    repaint();
+                    MUTATION_RATE /= 2;
+                    scores.repaint();
                 }
 
-                if (key == KeyEvent.VK_P) {
-                    timer.stop();
+                if (key == 106) {
+                    SAVE_SNAKE_RATIO += 0.1;
+                    scores.repaint();
                 }
 
-                if (key == KeyEvent.VK_R) {
-                    timer.start();
+                if (key == 111) {
+                    SAVE_SNAKE_RATIO -= 0.1;
+                    scores.repaint();
+                }
+
+                if (key == KeyEvent.VK_W) {
+                    saveToFile();
+                }
+
+                if (key == KeyEvent.VK_A) {
+                    autoSave = true;
+                    saveToFile();
+                    scores.repaint();
+                }
+
+                if (key == KeyEvent.VK_L) {
+                    readFromFile();
                 }
 
 
@@ -412,6 +439,66 @@ public class Board extends JPanel implements ActionListener {
     private void goDown() {
         if (snake.direction.canMoveThere(Direction.DOWN)) {
             snake.direction = Direction.DOWN;
+        }
+    }
+
+    private void autoSave() {
+        try {
+            if (fileName != null && !fileName.isEmpty()) {
+                FileOutputStream fout = new FileOutputStream(fileName);
+                ObjectOutputStream oos = new ObjectOutputStream(fout);
+                oos.writeObject(snakes);
+                saveWaiting = false;
+                System.out.println("Auto save triggered");
+            }
+        } catch (Exception e) {
+            System.out.println("AutoSave failed");
+            e.printStackTrace();
+        }
+    }
+
+    private void saveToFile() {
+        try {
+            final JFileChooser fc = new JFileChooser(SAVE_PATH);
+            fc.setFileFilter(new FileNameExtensionFilter("*.ser", "ser"));
+            int returnVal = fc.showSaveDialog(this);
+            if (returnVal == JFileChooser.APPROVE_OPTION) {
+                File file = fc.getSelectedFile();
+                //This is where a real application would open the file.
+                fileName = file.getName();
+                FileOutputStream fout = new FileOutputStream(fileName);
+                ObjectOutputStream oos = new ObjectOutputStream(fout);
+                oos.writeObject(snakes);
+            } else {
+                System.out.println(("Open command cancelled by user."));
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void readFromFile() {
+        try {
+            final JFileChooser fc = new JFileChooser(SAVE_PATH);
+            fc.setFileFilter(new FileNameExtensionFilter("*.ser", "ser"));
+            int returnVal = fc.showOpenDialog(this);
+            if (returnVal == JFileChooser.APPROVE_OPTION) {
+                File file = fc.getSelectedFile();
+                //This is where a real application would open the file.
+                FileInputStream streamIn = new FileInputStream(file.getName());
+                ObjectInputStream objectinputstream = new ObjectInputStream(streamIn);
+                List<Snake> readCase = (List<Snake>) objectinputstream.readObject();
+                System.out.println("Snakes loaded");
+                for (Snake snake : readCase) {
+                }
+
+                snakes = readCase;
+            } else {
+                System.out.println(("Open command cancelled by user."));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

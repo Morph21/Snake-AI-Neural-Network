@@ -1,10 +1,11 @@
 package pl.morph.ai.snake.engine;
 
+import java.io.Serializable;
 import java.util.Random;
 
 import static java.lang.Math.floor;
 
-public class Matrix {
+public class Matrix implements Serializable {
     int rows, cols;
     double[][] matrix;
 

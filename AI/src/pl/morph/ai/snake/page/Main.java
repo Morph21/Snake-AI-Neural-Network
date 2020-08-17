@@ -12,7 +12,7 @@ public class Main extends JFrame {
 
     //Set to false if you want AI to play the game
     private final boolean humanPlaying = false;
-    private final int AISnakesCount = 2000;
+    private final int AISnakesCount = 6000;
 
     private void initUI() {
         if (humanPlaying) {

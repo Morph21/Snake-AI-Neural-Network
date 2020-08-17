@@ -6,10 +6,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.Serializable;
 
-public class Scores extends JPanel {
+public class Scores extends JPanel implements Serializable {
     private final int SCORES_WIDTH = 800;
-    private final int SCORES_HEIGHT = 100;
+    private final int SCORES_HEIGHT = 800;
 
     private Score score;
     private Score highScore;
@@ -32,12 +33,24 @@ public class Scores extends JPanel {
         highScore = new Score();
     }
 
-    public void resetScores() {
+    public boolean resetScores() {
+        boolean scoreChanged = false;
         if (score.getScore() > highScore.getScore()) {
             highScore.setScore(score.getScore());
+            spawnNotification();
+            scoreChanged = true;
         }
         score.setScore(0);
         repaint();
+        return scoreChanged;
+    }
+
+    private void spawnNotification() {
+        try {
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void increseGeneration() {
@@ -52,79 +65,33 @@ public class Scores extends JPanel {
 
     public void setHighestScore(int highestScore) {
         highScore.setScore(highestScore);
+        spawnNotification();
         repaint();
     }
 
-    private void scoreBoard(Graphics g) {
-
-        String msg = "Score: ";
-        msg += score.getScore();
+    private void generationInfo(Graphics g) {
         Font small = new Font("Helvetica", Font.BOLD, 14);
         FontMetrics metr = getFontMetrics(small);
-
         g.setColor(Color.black);
         g.setFont(small);
-        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, SCORES_HEIGHT / 2);
-    }
+        String msg;
 
-    private void highScore(Graphics g) {
-
-        String msg = "High score: ";
-        msg += highScore.getScore();
-        Font small = new Font("Helvetica", Font.BOLD, 14);
-        FontMetrics metr = getFontMetrics(small);
-
-        g.setColor(Color.black);
-        g.setFont(small);
-        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, (SCORES_HEIGHT / 2) + 20);
-    }
-
-    private void generation(Graphics g) {
-
-        String msg = "Generation: ";
-        msg += generation;
-        Font small = new Font("Helvetica", Font.BOLD, 14);
-        FontMetrics metr = getFontMetrics(small);
-
-        g.setColor(Color.black);
-        g.setFont(small);
-        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, (SCORES_HEIGHT / 2) - 20);
-    }
-
-    private void fitness(Graphics g) {
-
-        String msg = "Fitness: ";
-        msg += highestFitness;
-        Font small = new Font("Helvetica", Font.BOLD, 14);
-        FontMetrics metr = getFontMetrics(small);
-
-        g.setColor(Color.black);
-        g.setFont(small);
-        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, (SCORES_HEIGHT / 2) + 40);
-    }
-
-    private void deadSnakes(Graphics g) {
-
-        String msg = "Dead snakes: ";
-        msg += deadSnakes;
-        Font small = new Font("Helvetica", Font.BOLD, 14);
-        FontMetrics metr = getFontMetrics(small);
-
-        g.setColor(Color.black);
-        g.setFont(small);
-        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, (SCORES_HEIGHT / 2) + 60);
-    }
-
-    private void mutation(Graphics g) {
-
-        String msg = "Mutation rate: ";
-        msg += Board.MUTATION_RATE;
-        Font small = new Font("Helvetica", Font.BOLD, 14);
-        FontMetrics metr = getFontMetrics(small);
-
-        g.setColor(Color.black);
-        g.setFont(small);
-        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, (SCORES_HEIGHT / 2) + 80);
+        msg = "Score: " + score.getScore();
+        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 20);
+        msg = "High score: " + highScore.getScore();
+        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 40);
+        msg = "Generation: " + generation;
+        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 60);
+        msg = "Fitness: " + highestFitness;
+        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 80);
+        msg = "Dead snakes: " + deadSnakes;
+        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 100);
+        msg = "Mutation rate: " + Board.MUTATION_RATE;
+        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 120);
+        msg = "SaveSnake ratio: " + Board.SAVE_SNAKE_RATIO;
+        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 140);
+        msg = "AutoSave: " + Board.autoSave;
+        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 160);
     }
 
     private void info(Graphics g) {
@@ -134,29 +101,30 @@ public class Scores extends JPanel {
 
         g.setColor(Color.black);
         g.setFont(small);
-        String msg = "Press d to change delay";
-        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, (SCORES_HEIGHT / 2) + 300);
-        msg = "Press s to change showing snakes\nPress + to increase mutation\n Press - to decrease mutation ";
-        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, (SCORES_HEIGHT / 2) + 320);
-        msg = "Press + to increase mutation\n Press - to decrease mutation ";
-        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, (SCORES_HEIGHT / 2) + 340);
-        msg = "Press - to decrease mutation ";
-        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, (SCORES_HEIGHT / 2) + 360);
-        msg = "Press p to pause ";
-        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, (SCORES_HEIGHT / 2) + 380);
-        msg = "Press r to resume ";
-        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, (SCORES_HEIGHT / 2) + 400);
+        String msg = "Press 'd' to change delay";
+        g.drawString(msg, 20, 300);
+        msg = "Press 's' to change showing snakes\nPress + to increase mutation\n Press - to decrease mutation ";
+        g.drawString(msg, 20, 320);
+        msg = "Press '+' to increase mutation\n Press - to decrease mutation ";
+        g.drawString(msg, 20, 340);
+        msg = "Press '-' to decrease mutation ";
+        g.drawString(msg, 20, 360);
+        msg = "Press 'p' to pause ";
+        g.drawString(msg, 20, 380);
+        msg = "Press 'r' to resume ";
+        g.drawString(msg, 20, 400);
+        msg = "Press 'w' to save all snakes to file (do it after pause) ";
+        g.drawString(msg, 20, 420);
+        msg = "Press 'l' to load all snakes from file (do it on paused game) ";
+        g.drawString(msg, 20, 440);
+        msg = "Press 'a' tu turn on autosave ";
+        g.drawString(msg, 20, 460);
     }
 
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
-        generation(g);
-        scoreBoard(g);
-        highScore(g);
-        fitness(g);
-        deadSnakes(g);
-        mutation(g);
+        generationInfo(g);
         info(g);
     }
 
@@ -180,6 +148,10 @@ public class Scores extends JPanel {
 
     public void setScore(Score score) {
         this.score = score;
+        repaint();
+    }
+
+    public void repaintIt() {
         repaint();
     }
 }

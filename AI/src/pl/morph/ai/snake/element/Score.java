@@ -1,6 +1,8 @@
 package pl.morph.ai.snake.element;
 
-public class Score {
+import java.io.Serializable;
+
+public class Score implements Serializable {
     private int score;
 
     public Score() {

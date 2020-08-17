@@ -1,6 +1,8 @@
 package pl.morph.ai.snake.element;
 
-public class Apple {
+import java.io.Serializable;
+
+public class Apple implements Serializable {
     private int apple_x;
     private int apple_y;
 
