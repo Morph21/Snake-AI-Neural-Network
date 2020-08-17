@@ -34,8 +34,8 @@ public class Board extends JPanel implements ActionListener {
     private double bestFitness;
     private double fitnessSum;
     private int samebest = 0;
-    public static double MUTATION_RATE = 0.15;
-    public static double SAVE_SNAKE_RATIO = 0.5;
+    public static double MUTATION_RATE = 0.3;
+    public static double SAVE_SNAKE_RATIO = 0.1;
 
     private boolean humanPlaying;
     private boolean showOnlyFirstSnake = false;

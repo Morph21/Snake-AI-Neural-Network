@@ -33,8 +33,8 @@ public class Snake {
     private int y[];
     private Score snakeScore;
     private long lifetime = 0;
-    private long timeLeft = 200;
-    private long maxLife = 500;
+    private long timeLeft = 100;
+    private long maxLife = 300;
     private long lifeForApple = timeLeft / 2;
     private double fitness = 0;
     public boolean inGame = true;
@@ -262,16 +262,16 @@ public class Snake {
     }
 
     public void calculateFitness() {  //calculate the fitness of the snake
-        if (snakeScore.getScore() < 10) {
-            fitness = floor(lifetime * lifetime) * pow(5, snakeScore.getScore());
-        } else {
-            fitness = floor(lifetime * lifetime);
-            fitness *= pow(2, 10);
-            fitness *= (snakeScore.getScore() - 9);
-        }
+        fitness = floor(lifetime * lifetime) * pow(5, snakeScore.getScore());
+//        if (snakeScore.getScore() < 10) {
+//        } else {
+//            fitness = floor(lifetime * lifetime);
+//            fitness *= pow(2, 10);
+//            fitness *= (snakeScore.getScore() - 9);
+//        }
 
         if (wallCollide || bodyCollide) {
-            fitness -= 100*100;
+            fitness -= 100 * 100;
         }
         if (fitness > brain.getHighestFitness()) {
             brain.setHighestFitness(fitness);
