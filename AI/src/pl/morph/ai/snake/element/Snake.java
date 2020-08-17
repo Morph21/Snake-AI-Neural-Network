@@ -86,14 +86,12 @@ public class Snake implements Serializable {
     public Snake cloneThis() {  //clone the snake
         Snake clone = new Snake(boardWidth, boardHeight, delay, humanPlaying, null, dotSize);
         clone.brain = brain.clone();
-        clone.fitness = fitness;
         return clone;
     }
 
     public Snake cloneForReplay() {  //clone a version of the snake that will be used for a replay
         Snake clone = new Snake(boardWidth, boardHeight, delay, humanPlaying, foodList, dotSize);
         clone.brain = brain.clone();
-        clone.fitness = fitness;
         return clone;
     }
 

@@ -207,7 +207,7 @@ public class Board extends JPanel implements ActionListener {
             }
             scores.setDeadSnakes(deadSnakes);
             scores.repaint();
-            if (deadSnakes >= AISnakes) {
+            if (deadSnakes >= AISnakes || deadSnakes >= snakes.size()) {
                 timer.stop();
                 scores.resetScores();
                 calculateFitness();
@@ -468,7 +468,21 @@ public class Board extends JPanel implements ActionListener {
                 fileName = file.getName();
                 FileOutputStream fout = new FileOutputStream(fileName);
                 ObjectOutputStream oos = new ObjectOutputStream(fout);
-                oos.writeObject(snakes);
+                snakes.sort(Comparator.comparingDouble(Snake::getFitness).reversed());
+                if (snakes.size() > 1000) {
+                    List<Snake> smallerList = new ArrayList<>();
+                    int i = 0;
+                    for (Snake snake : snakes) {
+                        if (i >= 1000) {
+                            break;
+                        }
+                        smallerList.add(snake);
+                        i++;
+                    }
+                    oos.writeObject(smallerList);
+                } else {
+                    oos.writeObject(snakes);
+                }
             } else {
                 System.out.println(("Open command cancelled by user."));
             }
@@ -490,8 +504,6 @@ public class Board extends JPanel implements ActionListener {
                 ObjectInputStream objectinputstream = new ObjectInputStream(streamIn);
                 List<Snake> readCase = (List<Snake>) objectinputstream.readObject();
                 System.out.println("Snakes loaded");
-                for (Snake snake : readCase) {
-                }
 
                 snakes = readCase;
             } else {
