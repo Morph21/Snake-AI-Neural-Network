@@ -28,7 +28,7 @@ public class Board extends JPanel implements ActionListener {
     //Speed of snake
     private int DELAY = 0;
     //Size of snake
-    private int DOT_SIZE = 10;
+    private int DOT_SIZE = 40;
 
     private String SAVE_PATH = "C:\\Users\\krzys\\Downloads\\AI-master\\AI-master\\AI";
 
