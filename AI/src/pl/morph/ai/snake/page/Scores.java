@@ -92,6 +92,8 @@ public class Scores extends JPanel implements Serializable {
         g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 140);
         msg = "AutoSave: " + Board.autoSave;
         g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 160);
+        msg = "Best only for crossing: " + Board.bestOnly;
+        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 180);
     }
 
     private void info(Graphics g) {
@@ -119,6 +121,8 @@ public class Scores extends JPanel implements Serializable {
         g.drawString(msg, 20, 440);
         msg = "Press 'a' tu turn on autosave ";
         g.drawString(msg, 20, 460);
+        msg = "Press 'b' tu turn on best only for crossing ";
+        g.drawString(msg, 20, 480);
     }
 
     @Override

@@ -23,7 +23,7 @@ public class Snake implements Serializable {
     //Max random y coord where apple can be spawned
     private final int rand_pos_y;
     //Size of dot
-    private final int dotSize;
+    private int dotSize;
     private Apple appleToEat;
     private int length = 4;
     private int x[];
@@ -51,7 +51,7 @@ public class Snake implements Serializable {
     private int hidden_nodes = 22;
     private double mutationRate;
 
-    final int input_count = 28;
+    final int input_count = 24;
     final int output_count = 3;
     double vision[] = new double[input_count];
     double decision[] = new double[output_count];
@@ -68,9 +68,9 @@ public class Snake implements Serializable {
         this.y = new int[max_length];
         this.rand_pos_x = boardWidth / dotSize;
         this.rand_pos_y = boardHeight / dotSize;
-        this.maxLife = boardWidth;
-        timeLeft = (boardWidth / dotSize / 2) * 10;
-        this.lifeForApple = timeLeft / 2;
+        this.maxLife = ((boardWidth / dotSize) * 10) ;
+        timeLeft = (boardWidth / dotSize) * 10;
+        this.lifeForApple = maxLife / 4;
 
         if (foodList != null) {
             this.foodList = foodList;
@@ -254,35 +254,38 @@ public class Snake implements Serializable {
     }
 
     public void increaseLifeSpan() {
+        timeLeft += lifeForApple;
         if (timeLeft < maxLife) {
-            timeLeft += lifeForApple;
         }
     }
 
-//    public void calculateFitness() {  //calculate the fitness of the snake
-//        fitness = floor(lifetime * lifetime) * pow(5, snakeScore.getScore());
-//
-////        if (snakeScore.getScore() < 10) {
-////            fitness = floor(lifetime * lifetime) * pow(2, snakeScore.getScore());
-////        } else {
-////            fitness = floor(lifetime * lifetime);
-////            fitness *= pow(2, 10);
-////            fitness *= (snakeScore.getScore() - 9);
-////        }
-//        if (wallCollide || bodyCollide) {
-//            fitness /= 4;
+    public void calculateFitness() {  //calculate the fitness of the snake
+        fitness = floor(lifetime * lifetime) * pow(5, snakeScore.getScore());
+
+//        if (snakeScore.getScore() < 10) {
+//            fitness = floor(lifetime * lifetime) * pow(2, snakeScore.getScore());
+//        } else {
+//            fitness = floor(lifetime * lifetime);
+//            fitness *= pow(2, 10);
+//            fitness *= (snakeScore.getScore() - 9);
 //        }
-//
-//        if (fitness > brain.getHighestFitness()) {
-//            brain.setHighestFitness(fitness);
-//        }
-//    }
+        setHighestFitness();
+    }
+
 //    public void calculateFitness() {  //calculate the fitness of the snake
 //        fitness = 200 * snakeScore.getScore() + 5 * lifetime;
+//        setHighestFitness();
 //    }
 
-    public void calculateFitness() {  //calculate the fitness of the snake
-        fitness = lifetime + (pow(2, snakeScore.getScore()) + pow(snakeScore.getScore(), 2.1) * 500) - (pow(snakeScore.getScore(), 1.2) * pow((0.25 * lifetime), 1.3));
+//    public void calculateFitness() {  //calculate the fitness of the snake
+//        fitness = lifetime + (pow(2, snakeScore.getScore()) + pow(snakeScore.getScore(), 2.1) * 500) - (pow(snakeScore.getScore(), 1.2) * pow((0.25 * lifetime), 1.3));
+//        setHighestFitness();
+//    }
+
+    private void setHighestFitness() {
+        if (fitness > brain.getHighestFitness()) {
+            brain.setHighestFitness(fitness);
+        }
     }
 
     public Snake crossover(Snake parent) {  //crossover the snake with another snake
@@ -393,32 +396,32 @@ public class Snake implements Serializable {
         vision[22] = temp[1];
         vision[23] = temp[2];
 
-        switch (direction) {
-            case RIGHT:
-                vision[24] = 1;
-                vision[25] = 0;
-                vision[26] = 0;
-                vision[27] = 0;
-                break;
-            case UP:
-                vision[24] = 0;
-                vision[25] = 1;
-                vision[26] = 0;
-                vision[27] = 0;
-                break;
-            case DOWN:
-                vision[24] = 0;
-                vision[25] = 0;
-                vision[26] = 1;
-                vision[27] = 0;
-                break;
-            case LEFT:
-                vision[24] = 0;
-                vision[25] = 0;
-                vision[26] = 0;
-                vision[27] = 1;
-                break;
-        }
+//        switch (direction) {
+//            case RIGHT:
+//                vision[24] = 1;
+//                vision[25] = 0;
+//                vision[26] = 0;
+//                vision[27] = 0;
+//                break;
+//            case UP:
+//                vision[24] = 0;
+//                vision[25] = 1;
+//                vision[26] = 0;
+//                vision[27] = 0;
+//                break;
+//            case DOWN:
+//                vision[24] = 0;
+//                vision[25] = 0;
+//                vision[26] = 1;
+//                vision[27] = 0;
+//                break;
+//            case LEFT:
+//                vision[24] = 0;
+//                vision[25] = 0;
+//                vision[26] = 0;
+//                vision[27] = 1;
+//                break;
+//        }
     }
 
     double[] lookInDirection(int X, int Y) {  //look in a direction and check for food, body and wall
@@ -436,11 +439,13 @@ public class Snake implements Serializable {
         while (!wallCollide(head_x, head_y)) {
             if (!foodFound && foodCollide(head_x, head_y)) {
                 foodFound = true;
-                look[0] = 1;
+                look[0] = 1 / distance;
+//                look[0] = 1;
             }
             if (!bodyFound && bodyCollide(head_x, head_y)) {
                 bodyFound = true;
                 look[1] = 1 / distance;
+//                look[1] = 1;
             }
 
             head_x += X;
@@ -449,6 +454,7 @@ public class Snake implements Serializable {
         }
 
         look[2] = 1 / distance;
+//        look[2] = 1;
         return look;
     }
 
@@ -480,7 +486,7 @@ public class Snake implements Serializable {
             double y1,
             double x2,
             double y2) {
-        return -Math.sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
+        return Math.sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
     }
 
 //    @Override
@@ -596,5 +602,21 @@ public class Snake implements Serializable {
 
     public void setScores(Scores scores) {
         this.scores = scores;
+    }
+
+    public int getDotSize() {
+        return dotSize;
+    }
+
+    public List<Apple> getFoodList() {
+        return foodList;
+    }
+
+    public void setFoodList(List<Apple> foodList) {
+        this.foodList = foodList;
+    }
+
+    public void setDotSize(int dotSize) {
+        this.dotSize = dotSize;
     }
 }

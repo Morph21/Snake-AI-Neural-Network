@@ -1,5 +1,6 @@
 package pl.morph.ai.snake.page;
 
+import pl.morph.ai.snake.element.Apple;
 import pl.morph.ai.snake.element.Direction;
 import pl.morph.ai.snake.element.Score;
 import pl.morph.ai.snake.element.Snake;
@@ -27,9 +28,9 @@ public class Board extends JPanel implements ActionListener {
     //Speed of snake
     private int DELAY = 0;
     //Size of snake
-    private int DOT_SIZE = 40;
+    private int DOT_SIZE = 10;
 
-    private String SAVE_PATH = "/home/kgruszczynski/Repo/AI";
+    private String SAVE_PATH = "C:\\Users\\krzys\\Downloads\\AI-master\\AI-master\\AI";
 
     private Snake snake;
     private Snake bestSnake;
@@ -48,8 +49,9 @@ public class Board extends JPanel implements ActionListener {
     private boolean resetByPressingSpace;
     private int AISnakes;
     public static boolean autoSave = false;
+    public static boolean bestOnly = false;
     private boolean saveWaiting = false;
-    private String fileName =  null;
+    private String fileName = null;
 
     private Scores scores;
 
@@ -81,7 +83,7 @@ public class Board extends JPanel implements ActionListener {
         setPreferredSize(new Dimension(B_WIDTH, B_HEIGHT));
 
         if (humanPlaying) {
-            DELAY = 100;
+            DELAY = 60;
             createHumanSnake();
         } else {
             createAISnakes(AINumber);
@@ -108,7 +110,6 @@ public class Board extends JPanel implements ActionListener {
         for (int i = 0; i < AINumber; i++) {
 
             this.snake = new Snake(B_WIDTH, B_HEIGHT, DELAY, humanPlaying, null, DOT_SIZE);
-
             placeSnakeOnMiddle();
             if (showOnlyFirstSnake) {
                 if (snakes.size() == 0) {
@@ -234,6 +235,7 @@ public class Board extends JPanel implements ActionListener {
     void naturalSelection() {
         List<Snake> newSnakes = new ArrayList<>();
 
+        snakes.sort(Comparator.comparingDouble(Snake::getFitness).reversed());
         setBestSnake();
         calculateFitnessSum();
 
@@ -245,9 +247,8 @@ public class Board extends JPanel implements ActionListener {
         placeSnakeOnMiddle(best);
 
         newSnakes.add(best);  //add the best 9snake of the prior generation into the new generation
-        snakes.sort(Comparator.comparingDouble(Snake::getFitness).reversed());
         while (newSnakes.size() != AISnakes) {
-            for (int i = 1; i < snakes.size() * SAVE_SNAKE_RATIO; i++) {
+            for (int i = 0; i < (bestOnly ? 1 : snakes.size() * SAVE_SNAKE_RATIO); i++) {
                 Snake snakey = selectParent().crossover(selectParent());
                 snakey = snakey.cloneThis();
                 snakey.mutate();
@@ -266,7 +267,7 @@ public class Board extends JPanel implements ActionListener {
                 }
                 snakey.spawnApple();
                 newSnakes.add(i, snakey);
-                if (newSnakes.size()==AISnakes) {
+                if (newSnakes.size() == AISnakes) {
                     break;
                 }
             }
@@ -278,7 +279,7 @@ public class Board extends JPanel implements ActionListener {
 
     void calculateFitnessSum() {  //calculate the sum of all the snakes fitnesses
         fitnessSum = 0;
-        for (Snake snake : snakes) {
+        for (int i = 0; i < (bestOnly ? 2 : snakes.size() * SAVE_SNAKE_RATIO); i++) {
             fitnessSum += snake.getFitness();
         }
     }
@@ -286,7 +287,7 @@ public class Board extends JPanel implements ActionListener {
     Snake selectParent() {  //selects a random number in range of the fitnesssum and if a snake falls in that range then select it
         double rand = Matrix.random(0, fitnessSum);
         double summation = 0;
-        for (int i = 0; i < snakes.size() * SAVE_SNAKE_RATIO; i++) {
+        for (int i = 0; i < (bestOnly ? 2 : snakes.size() * SAVE_SNAKE_RATIO); i++) {
             summation += snakes.get(i).getFitness();
             if (summation > rand) {
                 return snakes.get(i);
@@ -371,7 +372,7 @@ public class Board extends JPanel implements ActionListener {
 
                 if (key == KeyEvent.VK_D) {
                     if (DELAY == 0) {
-                        DELAY = 70;
+                        DELAY = 10;
                     } else {
                         DELAY = 0;
                     }
@@ -380,6 +381,9 @@ public class Board extends JPanel implements ActionListener {
 
                 if (key == 107) {
                     MUTATION_RATE *= 2;
+                    if (MUTATION_RATE > 1) {
+                        MUTATION_RATE = 1;
+                    }
                     scores.repaint();
                 }
 
@@ -390,11 +394,17 @@ public class Board extends JPanel implements ActionListener {
 
                 if (key == 106) {
                     SAVE_SNAKE_RATIO += 0.1;
+                    if (SAVE_SNAKE_RATIO > 1) {
+                        SAVE_SNAKE_RATIO = 1;
+                    }
                     scores.repaint();
                 }
 
                 if (key == 111) {
                     SAVE_SNAKE_RATIO -= 0.1;
+                    if (SAVE_SNAKE_RATIO <= 0) {
+                        SAVE_SNAKE_RATIO = 0.01;
+                    }
                     scores.repaint();
                 }
 
@@ -405,6 +415,11 @@ public class Board extends JPanel implements ActionListener {
                 if (key == KeyEvent.VK_A) {
                     autoSave = true;
                     saveToFile();
+                    scores.repaint();
+                }
+
+                if (key == KeyEvent.VK_B) {
+                    bestOnly = !bestOnly;
                     scores.repaint();
                 }
 
@@ -502,16 +517,67 @@ public class Board extends JPanel implements ActionListener {
                 //This is where a real application would open the file.
                 FileInputStream streamIn = new FileInputStream(file.getName());
                 ObjectInputStream objectinputstream = new ObjectInputStream(streamIn);
+                this.snakes = null;
                 List<Snake> readCase = (List<Snake>) objectinputstream.readObject();
                 System.out.println("Snakes loaded");
 
+                for (Snake snake : readCase) {
+                    int dotSize = snake.getDotSize();
+                    if (dotSize != DOT_SIZE) {
+                        snake.setDotSize(DOT_SIZE);
+                        List<Apple> foodList = snake.getFoodList();
+                        int diff;
+                        boolean lesser;
+                        if (dotSize > DOT_SIZE) {
+                            diff = dotSize / DOT_SIZE;
+                            lesser = false;
+                        } else {
+                            diff = DOT_SIZE / dotSize;
+                            lesser = true;
+                        }
+                        if (foodList != null) {
+                            for (Apple apple : foodList) {
+                                shiftApple(apple, lesser, diff);
+                            }
+                            snake.setFoodList(foodList);
+                        }
+
+                        Apple appleToEat = snake.getAppleToEat();
+                        if (appleToEat != null) {
+                            shiftApple(appleToEat, lesser, diff);
+                        }
+
+                    }
+                }
+
                 snakes = readCase;
+                repaint();
             } else {
                 System.out.println(("Open command cancelled by user."));
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void shiftApple(Apple apple, boolean lesser, int diff) {
+        int apple_x = apple.getApple_x();
+        int apple_y = apple.getApple_y();
+        if (apple_x != 0) {
+            if (lesser)
+                apple_x *= diff;
+            else
+                apple_x /= diff;
+        }
+
+        if (apple_y != 0) {
+            if (lesser)
+                apple_y *= diff;
+            else
+                apple_y /= diff;
+        }
+        apple.setApple_x(apple_x);
+        apple.setApple_y(apple_y);
     }
 }
 
