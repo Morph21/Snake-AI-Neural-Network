@@ -84,16 +84,18 @@ public class Scores extends JPanel implements Serializable {
         g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 60);
         msg = "Fitness: " + highestFitness;
         g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 80);
-        msg = "Dead snakes: " + deadSnakes;
+        msg = "Average fitness: " + Board.avgFitness;
         g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 100);
-        msg = "Mutation rate: " + Board.MUTATION_RATE;
+        msg = "Dead snakes: " + deadSnakes;
         g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 120);
-        msg = "SaveSnake ratio: " + Board.SAVE_SNAKE_RATIO;
+        msg = "Mutation rate: " + Board.MUTATION_RATE;
         g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 140);
-        msg = "AutoSave: " + Board.autoSave;
+        msg = "SaveSnake ratio: " + Board.SAVE_SNAKE_RATIO;
         g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 160);
-        msg = "Best only for crossing: " + Board.bestOnly;
+        msg = "AutoSave: " + Board.autoSave;
         g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 180);
+        msg = "Best only for crossing: " + Board.bestOnly;
+        g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 200);
     }
 
     private void info(Graphics g) {
@@ -105,7 +107,7 @@ public class Scores extends JPanel implements Serializable {
         g.setFont(small);
         String msg = "Press 'd' to change delay";
         g.drawString(msg, 20, 300);
-        msg = "Press 's' to change showing snakes\nPress + to increase mutation\n Press - to decrease mutation ";
+        msg = "Press 's' to change showing snakes";
         g.drawString(msg, 20, 320);
         msg = "Press '+' to increase mutation\n Press - to decrease mutation ";
         g.drawString(msg, 20, 340);

@@ -47,8 +47,8 @@ public class Snake implements Serializable {
     private boolean wallCollide = false;
     private boolean bodyCollide = false;
 
-    private int hidden_layers = 2;
-    private int hidden_nodes = 22;
+    private int hidden_layers = 3;
+    private int hidden_nodes = 16;
     private double mutationRate;
 
     final int input_count = 24;
@@ -256,31 +256,32 @@ public class Snake implements Serializable {
     public void increaseLifeSpan() {
         timeLeft += lifeForApple;
         if (timeLeft < maxLife) {
+
         }
     }
 
-    public void calculateFitness() {  //calculate the fitness of the snake
-        fitness = floor(lifetime * lifetime) * pow(5, snakeScore.getScore());
-
-//        if (snakeScore.getScore() < 10) {
-//            fitness = floor(lifetime * lifetime) * pow(2, snakeScore.getScore());
-//        } else {
-//            fitness = floor(lifetime * lifetime);
-//            fitness *= pow(2, 10);
-//            fitness *= (snakeScore.getScore() - 9);
-//        }
-        setHighestFitness();
-    }
+//    public void calculateFitness() {  //calculate the fitness of the snake
+//        fitness = floor(lifetime * lifetime) * pow(5, snakeScore.getScore());
+//
+////        if (snakeScore.getScore() < 10) {
+////            fitness = floor(lifetime * lifetime) * pow(2, snakeScore.getScore());
+////        } else {
+////            fitness = floor(lifetime * lifetime);
+////            fitness *= pow(2, 10);
+////            fitness *= (snakeScore.getScore() - 9);
+////        }
+//        setHighestFitness();
+//    }
 
 //    public void calculateFitness() {  //calculate the fitness of the snake
 //        fitness = 200 * snakeScore.getScore() + 5 * lifetime;
 //        setHighestFitness();
 //    }
 
-//    public void calculateFitness() {  //calculate the fitness of the snake
-//        fitness = lifetime + (pow(2, snakeScore.getScore()) + pow(snakeScore.getScore(), 2.1) * 500) - (pow(snakeScore.getScore(), 1.2) * pow((0.25 * lifetime), 1.3));
-//        setHighestFitness();
-//    }
+    public void calculateFitness() {  //calculate the fitness of the snake
+        fitness = lifetime + (pow(2, snakeScore.getScore()) + pow(snakeScore.getScore(), 2.1) * 500) - (pow(snakeScore.getScore(), 1.2) * pow((0.25 * lifetime), 1.3));
+        setHighestFitness();
+    }
 
     private void setHighestFitness() {
         if (fitness > brain.getHighestFitness()) {
@@ -439,8 +440,8 @@ public class Snake implements Serializable {
         while (!wallCollide(head_x, head_y)) {
             if (!foodFound && foodCollide(head_x, head_y)) {
                 foodFound = true;
-                look[0] = 1 / distance;
-//                look[0] = 1;
+//                look[0] = 1 / distance;
+                look[0] = 1;
             }
             if (!bodyFound && bodyCollide(head_x, head_y)) {
                 bodyFound = true;

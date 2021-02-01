@@ -38,10 +38,11 @@ public class Board extends JPanel implements ActionListener {
     private List<Snake> snakes;
     private int highScore = 0;
     private double bestFitness;
-    private double fitnessSum;
+    private float fitnessSum;
     private int samebest = 0;
     public static double MUTATION_RATE = 0.05;
     public static double SAVE_SNAKE_RATIO = 0.5;
+    public static double avgFitness = 0;
 
     private boolean humanPlaying;
     private boolean showOnlyFirstSnake = true;
@@ -279,15 +280,21 @@ public class Board extends JPanel implements ActionListener {
 
     void calculateFitnessSum() {  //calculate the sum of all the snakes fitnesses
         fitnessSum = 0;
-        for (int i = 0; i < (bestOnly ? 2 : snakes.size() * SAVE_SNAKE_RATIO); i++) {
-            fitnessSum += snake.getFitness();
+        for (int i = 0; i < snakes.size() * SAVE_SNAKE_RATIO; i++) {
+            snakes.get(i).calculateFitness();
+            fitnessSum += snakes.get(i).getFitness();
         }
+
+        avgFitness = fitnessSum / snakes.stream().count();
     }
 
     Snake selectParent() {  //selects a random number in range of the fitnesssum and if a snake falls in that range then select it
         double rand = Matrix.random(0, fitnessSum);
         double summation = 0;
-        for (int i = 0; i < (bestOnly ? 2 : snakes.size() * SAVE_SNAKE_RATIO); i++) {
+        if (bestOnly) {
+            return snakes.get(0);
+        }
+        for (int i = 0; i < snakes.size() * SAVE_SNAKE_RATIO; i++) {
             summation += snakes.get(i).getFitness();
             if (summation > rand) {
                 return snakes.get(i);
@@ -379,7 +386,7 @@ public class Board extends JPanel implements ActionListener {
                     timer.setDelay(DELAY);
                 }
 
-                if (key == 107) {
+                if (key == 107 || key == 61) {
                     MUTATION_RATE *= 2;
                     if (MUTATION_RATE > 1) {
                         MUTATION_RATE = 1;
@@ -387,7 +394,7 @@ public class Board extends JPanel implements ActionListener {
                     scores.repaint();
                 }
 
-                if (key == 109) {
+                if (key == 109 || key==45) {
                     MUTATION_RATE /= 2;
                     scores.repaint();
                 }
