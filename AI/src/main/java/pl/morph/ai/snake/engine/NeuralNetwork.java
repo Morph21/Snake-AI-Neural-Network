@@ -1,5 +1,6 @@
 package pl.morph.ai.snake.engine;
 
+import java.awt.*;
 import java.io.Serializable;
 import java.util.List;
 
@@ -86,4 +87,39 @@ public class NeuralNetwork implements Serializable {
     public void setHighestFitness(double highestFitness) {
         this.highestFitness = highestFitness;
     }
+
+    public Color tailColor() {
+        int red = getColor(weights[0]);
+        int green = getColor(weights[1]);
+        int blue = getColor(weights[2]);
+
+        return new Color(red, green, blue);
+    }
+
+    private int getColor(Matrix m) {
+        double sum = 0.0;
+        for (double[] matrix : m.matrix) {
+            for (double matrix2 : matrix) {
+                sum += matrix2;
+            }
+        }
+
+        if (sum < 0) {
+            sum *= -1;
+        }
+        sum *= 25;
+
+        long sumInt = Math.round(sum);
+
+        return remove255(sumInt);
+    }
+
+    private int remove255(long src) {
+        if (src > 255) {
+            src -= 255;
+            src = remove255(src);
+        }
+        return (int) src;
+    }
+
 }

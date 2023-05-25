@@ -1,9 +1,6 @@
 package pl.morph.ai.snake.page;
 
-import pl.morph.ai.snake.element.Apple;
-import pl.morph.ai.snake.element.Direction;
-import pl.morph.ai.snake.element.Score;
-import pl.morph.ai.snake.element.Snake;
+import pl.morph.ai.snake.element.*;
 import pl.morph.ai.snake.engine.Matrix;
 import pl.morph.ai.snake.engine.NeuralNetwork;
 
@@ -22,13 +19,13 @@ import java.util.stream.Collectors;
 
 public class Board extends JPanel implements ActionListener {
 
-    private final int B_WIDTH = 800;
-    private final int B_HEIGHT = 800;
+    private final int B_WIDTH = 600;
+    private final int B_HEIGHT = 600;
 
     //Speed of snake
     private int DELAY = 0;
     //Size of snake
-    private int DOT_SIZE = 40;
+    private int DOT_SIZE = 20;
 
     private String SAVE_PATH = "C:\\Users\\krzys\\Downloads\\AI-master\\AI-master\\AI";
 
@@ -45,7 +42,7 @@ public class Board extends JPanel implements ActionListener {
     public static double avgFitness = 0;
 
     private boolean humanPlaying;
-    private boolean showOnlyFirstSnake = true;
+    private boolean showOnlyFirstSnake = false;
 
     private boolean resetByPressingSpace;
     private int AISnakes;
@@ -54,6 +51,8 @@ public class Board extends JPanel implements ActionListener {
     private boolean saveWaiting = false;
     private String fileName = null;
 
+    private List<Wall> walls;
+
     private Scores scores;
 
     public static Timer timer;
@@ -61,6 +60,7 @@ public class Board extends JPanel implements ActionListener {
     public Board(Scores scores, boolean humanPlaying, Integer AINumber) {
         this.humanPlaying = humanPlaying;
         this.scores = scores;
+        this.walls = WallManager.prepareWalls(DOT_SIZE);
         if (humanPlaying) {
             initBoard(null);
         } else {
@@ -80,7 +80,6 @@ public class Board extends JPanel implements ActionListener {
 
         setBackground(Color.black);
         setFocusable(true);
-
         setPreferredSize(new Dimension(B_WIDTH, B_HEIGHT));
 
         if (humanPlaying) {
@@ -98,7 +97,7 @@ public class Board extends JPanel implements ActionListener {
     }
 
     private void createHumanSnake() {
-        this.snake = new Snake(B_WIDTH, B_HEIGHT, DELAY, humanPlaying, null, DOT_SIZE);
+        this.snake = new Snake(B_WIDTH, B_HEIGHT, DELAY, humanPlaying, null, DOT_SIZE, walls);
         this.snake.setShowIt(true);
         placeSnakeOnMiddle(this.snake);
 
@@ -110,7 +109,7 @@ public class Board extends JPanel implements ActionListener {
 
         for (int i = 0; i < AINumber; i++) {
 
-            this.snake = new Snake(B_WIDTH, B_HEIGHT, DELAY, humanPlaying, null, DOT_SIZE);
+            this.snake = new Snake(B_WIDTH, B_HEIGHT, DELAY, humanPlaying, null, DOT_SIZE, walls);
             placeSnakeOnMiddle();
             if (showOnlyFirstSnake) {
                 if (snakes.size() == 0) {
@@ -155,6 +154,12 @@ public class Board extends JPanel implements ActionListener {
                 }
             }
         }
+
+        if (walls != null && !walls.isEmpty()) {
+            for (Wall wall : walls) {
+                wall.doDrawing(g);
+            }
+        }
     }
 
     private void gameOver(Graphics g) {
@@ -174,7 +179,6 @@ public class Board extends JPanel implements ActionListener {
         g.drawString(restartGameMsg, (B_WIDTH - infoMetr.stringWidth(restartGameMsg)) / 2, (B_HEIGHT / 2) + 40);
     }
 
-
     @Override
     public void actionPerformed(ActionEvent e) {
         if (humanPlaying) {
@@ -184,8 +188,9 @@ public class Board extends JPanel implements ActionListener {
                 snake.move();
             }
         } else {
-            int deadSnakes = 0;
-            for (Snake snake : snakes) {
+            scores.setDeadSnakes(0);
+            snakes.parallelStream().forEach(snake -> {
+
                 if (snake.isBestSnake()) {
                     scores.setScore((new Score()).setScore(snake.getScore()));
                 }
@@ -204,12 +209,14 @@ public class Board extends JPanel implements ActionListener {
                         scores.setHighestFitness(snake.getFitness());
                     }
                 } else {
-                    deadSnakes++;
+                    scores.incrementDeadSnakes();
                 }
-            }
-            scores.setDeadSnakes(deadSnakes);
+            });
+//            for (Snake snake : snakes) {
+//            }
+
             scores.repaint();
-            if (deadSnakes >= AISnakes || deadSnakes >= snakes.size()) {
+            if (scores.getDeadSnakes() >= AISnakes || scores.getDeadSnakes() >= snakes.size()) {
                 timer.stop();
                 scores.resetScores();
                 calculateFitness();
@@ -228,9 +235,11 @@ public class Board extends JPanel implements ActionListener {
     }
 
     void calculateFitness() {  //calculate the fitnesses for each snake
-        for (Snake snake : snakes) {
+        snakes.parallelStream().forEach(snake -> {
             snake.calculateFitness();
-        }
+        });
+//        for (Snake snake : snakes) {
+//        }
     }
 
     void naturalSelection() {
@@ -246,15 +255,20 @@ public class Board extends JPanel implements ActionListener {
         best.setShowIt(true);
         best.spawnApple();
         placeSnakeOnMiddle(best);
+        int mutations = 0;
 
         newSnakes.add(best);  //add the best 9snake of the prior generation into the new generation
+        found = 0;
         while (newSnakes.size() != AISnakes) {
             for (int i = 0; i < (bestOnly ? 1 : snakes.size() * SAVE_SNAKE_RATIO); i++) {
                 Snake snakey = selectParent().crossover(selectParent());
                 snakey = snakey.cloneThis();
-                snakey.mutate();
+                boolean mutate = snakey.mutate();
+                if (mutate) {
+                    mutations++;
+                }
                 NeuralNetwork brain = snakey.getBrain();
-                snakey = new Snake(B_WIDTH, B_HEIGHT, DELAY, humanPlaying, null, DOT_SIZE);
+                snakey = new Snake(B_WIDTH, B_HEIGHT, DELAY, humanPlaying, null, DOT_SIZE, walls);
                 snakey.setBrain(brain);
                 snakey.setBestSnake(false);
                 snakey.setScores(null);
@@ -264,7 +278,9 @@ public class Board extends JPanel implements ActionListener {
                         snakey.setShowIt(true);
                     }
                 } else {
-                    snakey.setShowIt(true);
+                    if (i < 11) {
+                        snakey.setShowIt(true);
+                    }
                 }
                 snakey.spawnApple();
                 newSnakes.add(i, snakey);
@@ -273,6 +289,7 @@ public class Board extends JPanel implements ActionListener {
                 }
             }
         }
+        System.out.println("mutations in generation " + scores.getGeneration() + " = " + mutations);
         snakes = null;
         snakes = newSnakes;
         scores.increseGeneration();
@@ -288,6 +305,8 @@ public class Board extends JPanel implements ActionListener {
         avgFitness = fitnessSum / snakes.stream().count();
     }
 
+    int found = 0;
+
     Snake selectParent() {  //selects a random number in range of the fitnesssum and if a snake falls in that range then select it
         double rand = Matrix.random(0, fitnessSum);
         double summation = 0;
@@ -297,6 +316,7 @@ public class Board extends JPanel implements ActionListener {
         for (int i = 0; i < snakes.size() * SAVE_SNAKE_RATIO; i++) {
             summation += snakes.get(i).getFitness();
             if (summation > rand) {
+                found++;
                 return snakes.get(i);
             }
         }
@@ -365,21 +385,26 @@ public class Board extends JPanel implements ActionListener {
                     int i = 0;
                     for (Snake snake : snakes) {
                         if (showOnlyFirstSnake) {
-                            if (i == 0) {
+                            if (snake.isBestSnake()) {
                                 snake.setShowIt(true);
                             } else {
                                 snake.setShowIt(false);
                             }
                             i++;
                         } else {
+                            if (i < 11) {
+
+
                             snake.setShowIt(true);
+                            i++;
+                            }
                         }
                     }
                 }
 
                 if (key == KeyEvent.VK_D) {
                     if (DELAY == 0) {
-                        DELAY = 10;
+                        DELAY = 30;
                     } else {
                         DELAY = 0;
                     }
@@ -394,7 +419,7 @@ public class Board extends JPanel implements ActionListener {
                     scores.repaint();
                 }
 
-                if (key == 109 || key==45) {
+                if (key == 109 || key == 45) {
                     MUTATION_RATE /= 2;
                     scores.repaint();
                 }
@@ -532,6 +557,8 @@ public class Board extends JPanel implements ActionListener {
                     int dotSize = snake.getDotSize();
                     if (dotSize != DOT_SIZE) {
                         snake.setDotSize(DOT_SIZE);
+                        snake.setWalls(walls);
+
                         List<Apple> foodList = snake.getFoodList();
                         int diff;
                         boolean lesser;

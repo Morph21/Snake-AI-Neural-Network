@@ -9,8 +9,8 @@ import java.awt.event.ActionListener;
 import java.io.Serializable;
 
 public class Scores extends JPanel implements Serializable {
-    private final int SCORES_WIDTH = 800;
-    private final int SCORES_HEIGHT = 800;
+    private final int SCORES_WIDTH = 600;
+    private final int SCORES_HEIGHT = 600;
 
     private Score score;
     private Score highScore;
@@ -24,10 +24,10 @@ public class Scores extends JPanel implements Serializable {
 
     private void init() {
         setBackground(Color.gray);
-        setPreferredSize(new Dimension(SCORES_WIDTH, SCORES_HEIGHT));
-        setSize(new Dimension(SCORES_WIDTH, SCORES_HEIGHT));
-        setMaximumSize(new Dimension(SCORES_WIDTH, SCORES_HEIGHT));
-        setMinimumSize(new Dimension(SCORES_WIDTH, SCORES_HEIGHT));
+//        setPreferredSize(new Dimension(SCORES_WIDTH, SCORES_HEIGHT));
+//        setSize(new Dimension(SCORES_WIDTH, SCORES_HEIGHT));
+//        setMaximumSize(new Dimension(SCORES_WIDTH, SCORES_HEIGHT));
+//        setMinimumSize(new Dimension(SCORES_WIDTH, SCORES_HEIGHT));
 
         score = new Score();
         highScore = new Score();
@@ -143,9 +143,17 @@ public class Scores extends JPanel implements Serializable {
         return this;
     }
 
-    public void setDeadSnakes(int deadSnakes) {
+    public synchronized void setDeadSnakes(int deadSnakes) {
         this.deadSnakes = deadSnakes;
         repaint();
+    }
+
+    public int getDeadSnakes() {
+        return this.deadSnakes;
+    }
+
+    public synchronized void incrementDeadSnakes() {
+        this.deadSnakes++;
     }
 
     public Score getScore() {
@@ -159,5 +167,9 @@ public class Scores extends JPanel implements Serializable {
 
     public void repaintIt() {
         repaint();
+    }
+
+    public int getGeneration() {
+        return generation;
     }
 }

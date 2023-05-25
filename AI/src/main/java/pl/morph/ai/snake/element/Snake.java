@@ -12,8 +12,10 @@ import java.util.Random;
 
 import static java.lang.Math.floor;
 import static java.lang.Math.pow;
+import static pl.morph.ai.snake.engine.Matrix.random;
 
 public class Snake implements Serializable {
+    private static final long serialVersionUID = -4639319120226368237L;
     private final int boardWidth;
     private final int boardHeight;
     //Maximum length of snake
@@ -47,7 +49,7 @@ public class Snake implements Serializable {
     private boolean wallCollide = false;
     private boolean bodyCollide = false;
 
-    private int hidden_layers = 3;
+    private int hidden_layers = 2;
     private int hidden_nodes = 16;
     private double mutationRate;
 
@@ -56,7 +58,9 @@ public class Snake implements Serializable {
     double vision[] = new double[input_count];
     double decision[] = new double[output_count];
 
-    public Snake(int boardWidth, int boardHeight, int delay, boolean humanPlaying, List<Apple> foodList, int dotSize) {
+    private List<Wall> walls;
+
+    public Snake(int boardWidth, int boardHeight, int delay, boolean humanPlaying, List<Apple> foodList, int dotSize, List<Wall> walls) {
         this.dotSize = dotSize;
         this.delay = delay;
         this.humanPlaying = humanPlaying;
@@ -68,10 +72,11 @@ public class Snake implements Serializable {
         this.y = new int[max_length];
         this.rand_pos_x = boardWidth / dotSize;
         this.rand_pos_y = boardHeight / dotSize;
-        this.maxLife = ((boardWidth / dotSize) * 10) ;
+        this.maxLife = ((boardWidth / dotSize) * 10);
         timeLeft = (boardWidth / dotSize) * 10;
         this.lifeForApple = maxLife / 4;
 
+        this.walls = walls;
         if (foodList != null) {
             this.foodList = foodList;
         }
@@ -84,13 +89,13 @@ public class Snake implements Serializable {
     }
 
     public Snake cloneThis() {  //clone the snake
-        Snake clone = new Snake(boardWidth, boardHeight, delay, humanPlaying, null, dotSize);
+        Snake clone = new Snake(boardWidth, boardHeight, delay, humanPlaying, null, dotSize, walls);
         clone.brain = brain.clone();
         return clone;
     }
 
     public Snake cloneForReplay() {  //clone a version of the snake that will be used for a replay
-        Snake clone = new Snake(boardWidth, boardHeight, delay, humanPlaying, foodList, dotSize);
+        Snake clone = new Snake(boardWidth, boardHeight, delay, humanPlaying, foodList, dotSize, walls);
         clone.brain = brain.clone();
         return clone;
     }
@@ -142,17 +147,26 @@ public class Snake implements Serializable {
     public void spawnApple() {
         if (!bestSnake) {
 
-            appleToEat = randomizeApple();
-            for (int i = 0; i < length; i++) {
-                while (appleToEat.getApple_x() == x[i] && appleToEat.getApple_y() == y[i]) {
-                    appleToEat = randomizeApple();
-                }
-            }
-            foodList.add(appleToEat);
+            randomApple();
         } else {
-            appleToEat = foodList.get(foodIterate);
-            foodIterate++;
+
+            if (foodList.size() > foodIterate) {
+                appleToEat = foodList.get(foodIterate);
+                foodIterate++;
+            } else {
+                randomApple();
+            }
         }
+    }
+
+    private void randomApple() {
+        appleToEat = randomizeApple();
+        for (int i = 0; i < length; i++) {
+            while ((appleToEat.getApple_x() == x[i] && appleToEat.getApple_y() == y[i]) || wallCollide(appleToEat.getApple_x(), appleToEat.getApple_y())) {
+                appleToEat = randomizeApple();
+            }
+        }
+        foodList.add(appleToEat);
     }
 
     private Apple randomizeApple() {
@@ -173,21 +187,22 @@ public class Snake implements Serializable {
                 g.drawRect(appleToEat.getApple_x(), appleToEat.getApple_y(), dotSize, dotSize);
             }
 
-            for (int z = 0; z < length; z++) {
+            for (int z = length; z >= 0; z--) {
                 if (z == 0) {
                     //head
                     if (this.showIt) {
-                        g.setColor(Color.green);
+                        g.setColor(brain.tailColor());
                         g.fillRect(x[z], y[z], dotSize - 1, dotSize - 1);
-                        g.setColor(Color.black);
+                        g.setColor(Color.yellow);
                         g.drawRect(x[z], y[z], dotSize, dotSize);
                     }
                 } else {
                     //tail
                     if (this.showIt) {
-                        g.setColor(Color.white);
+//                        brain.
+                        g.setColor(brain.tailColor());
                         g.fillRect(x[z], y[z], dotSize - 1, dotSize - 1);
-                        g.setColor(Color.black);
+                        g.setColor(Color.white);
                         g.drawRect(x[z], y[z], dotSize, dotSize);
                     }
 
@@ -274,7 +289,7 @@ public class Snake implements Serializable {
 //    }
 
 //    public void calculateFitness() {  //calculate the fitness of the snake
-//        fitness = 200 * snakeScore.getScore() + 5 * lifetime;
+//        fitness = 200 * snakeScore.getScore() + lifetime;
 //        setHighestFitness();
 //    }
 
@@ -290,13 +305,26 @@ public class Snake implements Serializable {
     }
 
     public Snake crossover(Snake parent) {  //crossover the snake with another snake
-        Snake child = new Snake(boardWidth, boardHeight, delay, humanPlaying, null, dotSize);
+        Snake child = new Snake(boardWidth, boardHeight, delay, humanPlaying, null, dotSize, walls);
         child.brain = brain.crossover(parent.brain);
         return child;
     }
 
-    public void mutate() {  //mutate the snakes brain
-        brain.mutate(mutationRate);
+    public boolean mutate() {  //mutate the snakes brain
+        if (shouldMutate()) {
+            brain.mutate(mutationRate);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean shouldMutate() {
+        // Not every snake should mutate
+        double rand = random(0, 1);
+        if (rand < 0.9) {
+            return true;
+        }
+        return false;
     }
 
     public void think() {
@@ -445,8 +473,8 @@ public class Snake implements Serializable {
             }
             if (!bodyFound && bodyCollide(head_x, head_y)) {
                 bodyFound = true;
-                look[1] = 1 / distance;
-//                look[1] = 1;
+//                look[1] = 1 / distance;
+                look[1] = 1;
             }
 
             head_x += X;
@@ -479,6 +507,15 @@ public class Snake implements Serializable {
         if (X >= boardWidth || X < 0 || Y >= boardHeight || Y < 0) {
             return true;
         }
+
+        if (walls != null && !walls.isEmpty()) {
+            for (Wall wall : walls) {
+                if (X == wall.getX() && Y == wall.getY()) {
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 
@@ -619,5 +656,9 @@ public class Snake implements Serializable {
 
     public void setDotSize(int dotSize) {
         this.dotSize = dotSize;
+    }
+
+    public void setWalls(List<Wall> walls) {
+        this.walls = walls;
     }
 }
