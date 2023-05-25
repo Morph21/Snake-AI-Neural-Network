@@ -22,9 +22,9 @@ public class Board extends JPanel implements ActionListener {
     private final int B_WIDTH = 600;
     private final int B_HEIGHT = 600;
 
-    //Speed of snake
+    //Speed of pl.morph.ai.snake
     private int DELAY = 0;
-    //Size of snake
+    //Size of pl.morph.ai.snake
     private int DOT_SIZE = 20;
 
     private String SAVE_PATH = "C:\\Users\\krzys\\Downloads\\AI-master\\AI-master\\AI";
@@ -184,7 +184,7 @@ public class Board extends JPanel implements ActionListener {
         if (humanPlaying) {
             if (snake.inGame) {
                 snake.checkApple(scores);
-//                snake.checkCollision();
+//                pl.morph.ai.snake.checkCollision();
                 snake.move();
             }
         } else {
@@ -212,7 +212,7 @@ public class Board extends JPanel implements ActionListener {
                     scores.incrementDeadSnakes();
                 }
             });
-//            for (Snake snake : snakes) {
+//            for (Snake pl.morph.ai.snake : snakes) {
 //            }
 
             scores.repaint();
@@ -234,11 +234,11 @@ public class Board extends JPanel implements ActionListener {
         repaint();
     }
 
-    void calculateFitness() {  //calculate the fitnesses for each snake
+    void calculateFitness() {  //calculate the fitnesses for each pl.morph.ai.snake
         snakes.parallelStream().forEach(snake -> {
             snake.calculateFitness();
         });
-//        for (Snake snake : snakes) {
+//        for (Snake pl.morph.ai.snake : snakes) {
 //        }
     }
 
@@ -307,7 +307,7 @@ public class Board extends JPanel implements ActionListener {
 
     int found = 0;
 
-    Snake selectParent() {  //selects a random number in range of the fitnesssum and if a snake falls in that range then select it
+    Snake selectParent() {  //selects a random number in range of the fitnesssum and if a pl.morph.ai.snake falls in that range then select it
         double rand = Matrix.random(0, fitnessSum);
         double summation = 0;
         if (bestOnly) {
@@ -323,7 +323,7 @@ public class Board extends JPanel implements ActionListener {
         return snakes.get(0);
     }
 
-    void setBestSnake() {  //set the best snake of the generation
+    void setBestSnake() {  //set the best pl.morph.ai.snake of the generation
         double max = 0;
         int maxIndex = 0;
         for (int i = 0; i < snakes.size(); i++) {

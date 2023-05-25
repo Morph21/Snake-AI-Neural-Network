@@ -18,7 +18,7 @@ public class Snake implements Serializable {
     private static final long serialVersionUID = -4639319120226368237L;
     private final int boardWidth;
     private final int boardHeight;
-    //Maximum length of snake
+    //Maximum length of pl.morph.ai.snake
     private final int max_length;
     //Max random x coord where apple can be spawned
     private final int rand_pos_x;
@@ -50,7 +50,7 @@ public class Snake implements Serializable {
     private boolean bodyCollide = false;
 
     private int hidden_layers = 2;
-    private int hidden_nodes = 16;
+    private int hidden_nodes = 24;
     private double mutationRate;
 
     final int input_count = 24;
@@ -88,13 +88,13 @@ public class Snake implements Serializable {
         snakeScore.setScore(1);
     }
 
-    public Snake cloneThis() {  //clone the snake
+    public Snake cloneThis() {  //clone the pl.morph.ai.snake
         Snake clone = new Snake(boardWidth, boardHeight, delay, humanPlaying, null, dotSize, walls);
         clone.brain = brain.clone();
         return clone;
     }
 
-    public Snake cloneForReplay() {  //clone a version of the snake that will be used for a replay
+    public Snake cloneForReplay() {  //clone a version of the pl.morph.ai.snake that will be used for a replay
         Snake clone = new Snake(boardWidth, boardHeight, delay, humanPlaying, foodList, dotSize, walls);
         clone.brain = brain.clone();
         return clone;
@@ -237,7 +237,7 @@ public class Snake implements Serializable {
     }
 
     /**
-     * Checks if snake is going to eat apple
+     * Checks if pl.morph.ai.snake is going to eat apple
      */
     public void checkApple() {
 
@@ -255,7 +255,7 @@ public class Snake implements Serializable {
     }
 
     /**
-     * Checks if snake is going to eat apple
+     * Checks if pl.morph.ai.snake is going to eat apple
      */
     public void checkApple(Scores scores) {
 
@@ -275,7 +275,7 @@ public class Snake implements Serializable {
         }
     }
 
-//    public void calculateFitness() {  //calculate the fitness of the snake
+//    public void calculateFitness() {  //calculate the fitness of the pl.morph.ai.snake
 //        fitness = floor(lifetime * lifetime) * pow(5, snakeScore.getScore());
 //
 ////        if (snakeScore.getScore() < 10) {
@@ -288,12 +288,12 @@ public class Snake implements Serializable {
 //        setHighestFitness();
 //    }
 
-//    public void calculateFitness() {  //calculate the fitness of the snake
+//    public void calculateFitness() {  //calculate the fitness of the pl.morph.ai.snake
 //        fitness = 200 * snakeScore.getScore() + lifetime;
 //        setHighestFitness();
 //    }
 
-    public void calculateFitness() {  //calculate the fitness of the snake
+    public void calculateFitness() {  //calculate the fitness of the pl.morph.ai.snake
         fitness = lifetime + (pow(2, snakeScore.getScore()) + pow(snakeScore.getScore(), 2.1) * 500) - (pow(snakeScore.getScore(), 1.2) * pow((0.25 * lifetime), 1.3));
         setHighestFitness();
     }
@@ -304,7 +304,7 @@ public class Snake implements Serializable {
         }
     }
 
-    public Snake crossover(Snake parent) {  //crossover the snake with another snake
+    public Snake crossover(Snake parent) {  //crossover the pl.morph.ai.snake with another pl.morph.ai.snake
         Snake child = new Snake(boardWidth, boardHeight, delay, humanPlaying, null, dotSize, walls);
         child.brain = brain.crossover(parent.brain);
         return child;
@@ -319,7 +319,7 @@ public class Snake implements Serializable {
     }
 
     private boolean shouldMutate() {
-        // Not every snake should mutate
+        // Not every pl.morph.ai.snake should mutate
         double rand = random(0, 1);
         if (rand < 0.9) {
             return true;
@@ -341,7 +341,7 @@ public class Snake implements Serializable {
     }
 
 
-    public void move() {  //move the snake
+    public void move() {  //move the pl.morph.ai.snake
         if (inGame) {
             if (!humanPlaying) {
                 lifetime++;
