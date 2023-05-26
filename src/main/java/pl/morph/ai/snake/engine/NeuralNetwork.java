@@ -2,7 +2,6 @@ package pl.morph.ai.snake.engine;
 
 import java.awt.*;
 import java.io.Serializable;
-import java.util.List;
 
 public class NeuralNetwork implements Serializable {
     private static final long serialVersionUID = -2824217385197224301L;

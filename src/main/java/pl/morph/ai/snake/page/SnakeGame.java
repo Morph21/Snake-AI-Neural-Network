@@ -10,6 +10,14 @@ public class SnakeGame extends JFrame {
         initUI();
     }
 
+    public static void main(String[] args) {
+
+        EventQueue.invokeLater(() -> {
+            JFrame ex = new SnakeGame();
+            ex.setVisible(true);
+        });
+    }
+
     //Set to false if you want AI to play the game
     private final boolean humanPlaying = false;
     private final int AISnakesCount = 2000;
@@ -58,11 +66,4 @@ public class SnakeGame extends JFrame {
         cnt.add(mainLayout, BorderLayout.CENTER);
     }
 
-    public static void main(String[] args) {
-
-        EventQueue.invokeLater(() -> {
-            JFrame ex = new SnakeGame();
-            ex.setVisible(true);
-        });
-    }
 }

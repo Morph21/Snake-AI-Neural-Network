@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import static java.lang.Math.floor;
 import static java.lang.Math.pow;
 import static pl.morph.ai.snake.engine.Matrix.random;
 

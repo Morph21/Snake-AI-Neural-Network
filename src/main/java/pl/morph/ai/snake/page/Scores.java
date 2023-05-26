@@ -4,8 +4,6 @@ import pl.morph.ai.snake.element.Score;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.Serializable;
 
 public class Scores extends JPanel implements Serializable {
