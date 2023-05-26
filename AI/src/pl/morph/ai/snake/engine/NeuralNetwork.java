@@ -5,6 +5,7 @@ import java.io.Serializable;
 import java.util.List;
 
 public class NeuralNetwork implements Serializable {
+    private static final long serialVersionUID = -2824217385197224301L;
 
     private double highestFitness = 0;
 
@@ -91,7 +92,13 @@ public class NeuralNetwork implements Serializable {
     public Color tailColor() {
         int red = getColor(weights[0]);
         int green = getColor(weights[1]);
-        int blue = getColor(weights[2]);
+        int blue;
+        if (weights.length >= 3) {
+            blue = getColor(weights[2]);
+        } else {
+            blue = getColor(weights[1]);
+        }
+
 
         return new Color(red, green, blue);
     }

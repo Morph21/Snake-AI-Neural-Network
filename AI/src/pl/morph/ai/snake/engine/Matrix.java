@@ -6,6 +6,7 @@ import java.util.Random;
 import static java.lang.Math.floor;
 
 public class Matrix implements Serializable {
+    private static final long serialVersionUID = 568494227179495863L;
     int rows, cols;
     double[][] matrix;
 
@@ -138,7 +139,7 @@ public class Matrix implements Serializable {
         return r.nextGaussian();
     }
 
-    private static double random(int from, int to) {
+    public static double random(int from, int to) {
         Random r = new Random();
         return from + (to - from) * r.nextDouble();
     }

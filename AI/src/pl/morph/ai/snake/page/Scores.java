@@ -9,8 +9,9 @@ import java.awt.event.ActionListener;
 import java.io.Serializable;
 
 public class Scores extends JPanel implements Serializable {
-    private final int SCORES_WIDTH = 600;
-    private final int SCORES_HEIGHT = 600;
+    private static final long serialVersionUID = -6020702076594229938L;
+    private final int SCORES_WIDTH = 800;
+    private final int SCORES_HEIGHT = 800;
 
     private Score score;
     private Score highScore;

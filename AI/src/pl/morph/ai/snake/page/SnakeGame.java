@@ -12,7 +12,7 @@ public class SnakeGame extends JFrame {
 
     //Set to false if you want AI to play the game
     private final boolean humanPlaying = false;
-    private final int AISnakesCount = 1000;
+    private final int AISnakesCount = 2000;
 
     private void initUI() {
         if (humanPlaying) {

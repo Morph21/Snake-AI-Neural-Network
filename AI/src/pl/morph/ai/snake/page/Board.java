@@ -19,15 +19,15 @@ import java.util.stream.Collectors;
 
 public class Board extends JPanel implements ActionListener {
 
-    private final int B_WIDTH = 600;
-    private final int B_HEIGHT = 600;
+    public final static int B_WIDTH = 800;
+    public final static int B_HEIGHT = 800;
 
     //Speed of pl.morph.ai.snake
     private int DELAY = 0;
     //Size of pl.morph.ai.snake
-    private int DOT_SIZE = 20;
+    private int DOT_SIZE = 80;
 
-    private String SAVE_PATH = "C:\\Users\\krzys\\Downloads\\AI-master\\AI-master\\AI";
+    private String SAVE_PATH = "C:\\repo\\github\\AI";
 
     private Snake snake;
     private Snake bestSnake;
@@ -37,8 +37,10 @@ public class Board extends JPanel implements ActionListener {
     private double bestFitness;
     private float fitnessSum;
     private int samebest = 0;
-    public static double MUTATION_RATE = 0.05;
-    public static double SAVE_SNAKE_RATIO = 0.5;
+    public static double MUTATION_RATE = 0.03;
+
+    public static double CROSSOVER_RATE = 0.9;
+    public static double SAVE_SNAKE_RATIO = 1;
     public static double avgFitness = 0;
 
     private boolean humanPlaying;
@@ -86,6 +88,7 @@ public class Board extends JPanel implements ActionListener {
             DELAY = 60;
             createHumanSnake();
         } else {
+            DELAY = 0;
             createAISnakes(AINumber);
         }
 
@@ -222,7 +225,7 @@ public class Board extends JPanel implements ActionListener {
                 calculateFitness();
                 naturalSelection();
                 scores.setHighestFitness(bestFitness);
-                System.out.println(bestSnakeScore + ". " + bestFitness);
+                System.out.println(scores.getGeneration()-1 + "\t" + bestSnakeScore + ". " + bestFitness);
                 if (autoSave && (saveWaiting)) {
                     autoSave();
                 }
@@ -259,14 +262,25 @@ public class Board extends JPanel implements ActionListener {
 
         newSnakes.add(best);  //add the best 9snake of the prior generation into the new generation
         found = 0;
+
         while (newSnakes.size() != AISnakes) {
-            for (int i = 0; i < (bestOnly ? 1 : snakes.size() * SAVE_SNAKE_RATIO); i++) {
-                Snake snakey = selectParent().crossover(selectParent());
-                snakey = snakey.cloneThis();
-                boolean mutate = snakey.mutate();
-                if (mutate) {
-                    mutations++;
+            for (int i = 0; i < (snakes.size() * SAVE_SNAKE_RATIO); i++) {
+                Snake child = selectParent(true);
+                Snake parent = snakes.get(i);
+
+                Snake snakey = parent.cloneThis();
+                if (i == 0) {
+                    snakey = parent.cloneThis(); // dont crossover first one
+                } else {
+                    double rand = Matrix.random(0,1);
+                    if (rand < CROSSOVER_RATE) {
+                        snakey = child.crossover(parent);
+                    }
                 }
+
+
+                snakey.mutate();
+
                 NeuralNetwork brain = snakey.getBrain();
                 snakey = new Snake(B_WIDTH, B_HEIGHT, DELAY, humanPlaying, null, DOT_SIZE, walls);
                 snakey.setBrain(brain);
@@ -289,7 +303,6 @@ public class Board extends JPanel implements ActionListener {
                 }
             }
         }
-        System.out.println("mutations in generation " + scores.getGeneration() + " = " + mutations);
         snakes = null;
         snakes = newSnakes;
         scores.increseGeneration();
@@ -307,20 +320,30 @@ public class Board extends JPanel implements ActionListener {
 
     int found = 0;
 
-    Snake selectParent() {  //selects a random number in range of the fitnesssum and if a pl.morph.ai.snake falls in that range then select it
-        double rand = Matrix.random(0, fitnessSum);
-        double summation = 0;
-        if (bestOnly) {
+//    Snake selectParent(boolean child) {  //selects a random number in range of the fitnesssum and if a pl.morph.ai.snake falls in that range then select it
+//        double rand = Matrix.random(0, fitnessSum);
+//        double summation = 0;
+//        if (bestOnly && !child) {
+//            return snakes.get(0);
+//        }
+//        for (int i = 0; i < snakes.size() * SAVE_SNAKE_RATIO; i++) {
+//            summation += snakes.get(i).getFitness();
+//            if (summation > rand) {
+//                found++;
+//                return snakes.get(i);
+//            }
+//        }
+//        return snakes.get(0);
+//    }
+
+    Snake selectParent(boolean child) {  //selects a random number in range of the fitnesssum and if a pl.morph.ai.snake falls in that range then select it
+        double rand = Matrix.random(0, snakes.size() * SAVE_SNAKE_RATIO);
+        int floor = (int)rand;
+
+        if (bestOnly && !child) {
             return snakes.get(0);
         }
-        for (int i = 0; i < snakes.size() * SAVE_SNAKE_RATIO; i++) {
-            summation += snakes.get(i).getFitness();
-            if (summation > rand) {
-                found++;
-                return snakes.get(i);
-            }
-        }
-        return snakes.get(0);
+        return snakes.get(floor);
     }
 
     void setBestSnake() {  //set the best pl.morph.ai.snake of the generation
@@ -404,7 +427,7 @@ public class Board extends JPanel implements ActionListener {
 
                 if (key == KeyEvent.VK_D) {
                     if (DELAY == 0) {
-                        DELAY = 30;
+                        DELAY = 20;
                     } else {
                         DELAY = 0;
                     }
@@ -555,7 +578,7 @@ public class Board extends JPanel implements ActionListener {
 
                 for (Snake snake : readCase) {
                     int dotSize = snake.getDotSize();
-                    if (dotSize != DOT_SIZE) {
+                    //if (dotSize != DOT_SIZE) {
                         snake.setDotSize(DOT_SIZE);
                         snake.setWalls(walls);
 
@@ -581,7 +604,7 @@ public class Board extends JPanel implements ActionListener {
                             shiftApple(appleToEat, lesser, diff);
                         }
 
-                    }
+                    //}
                 }
 
                 snakes = readCase;

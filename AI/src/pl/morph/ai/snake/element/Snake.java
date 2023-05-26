@@ -6,6 +6,8 @@ import pl.morph.ai.snake.page.Scores;
 
 import java.awt.*;
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -15,7 +17,7 @@ import static java.lang.Math.pow;
 import static pl.morph.ai.snake.engine.Matrix.random;
 
 public class Snake implements Serializable {
-    private static final long serialVersionUID = -4639319120226368237L;
+    private static final long serialVersionUID = -7594040040072369358L;
     private final int boardWidth;
     private final int boardHeight;
     //Maximum length of pl.morph.ai.snake
@@ -53,8 +55,10 @@ public class Snake implements Serializable {
     private int hidden_nodes = 24;
     private double mutationRate;
 
-    final int input_count = 24;
+    final int input_count = 8;
     final int output_count = 3;
+
+    final int look_count = 2;
     double vision[] = new double[input_count];
     double decision[] = new double[output_count];
 
@@ -276,15 +280,15 @@ public class Snake implements Serializable {
     }
 
 //    public void calculateFitness() {  //calculate the fitness of the pl.morph.ai.snake
-//        fitness = floor(lifetime * lifetime) * pow(5, snakeScore.getScore());
+////        fitness = floor(lifetime * lifetime) * pow(5, snakeScore.getScore());
 //
-////        if (snakeScore.getScore() < 10) {
-////            fitness = floor(lifetime * lifetime) * pow(2, snakeScore.getScore());
-////        } else {
-////            fitness = floor(lifetime * lifetime);
-////            fitness *= pow(2, 10);
-////            fitness *= (snakeScore.getScore() - 9);
-////        }
+//        if (snakeScore.getScore() < 10) {
+//            fitness = floor(lifetime * lifetime) * pow(2, snakeScore.getScore());
+//        } else {
+//            fitness = floor(lifetime * lifetime);
+//            fitness *= pow(2, 10);
+//            fitness *= (snakeScore.getScore() - 9);
+//        }
 //        setHighestFitness();
 //    }
 
@@ -310,12 +314,8 @@ public class Snake implements Serializable {
         return child;
     }
 
-    public boolean mutate() {  //mutate the snakes brain
-        if (shouldMutate()) {
-            brain.mutate(mutationRate);
-            return true;
-        }
-        return false;
+    public void mutate() {  //mutate the snakes brain
+        brain.mutate(mutationRate);
     }
 
     private boolean shouldMutate() {
@@ -392,69 +392,41 @@ public class Snake implements Serializable {
 
     public void look() {  //look in all 8 directions and check for food, body and wall
         vision = new double[input_count];
-        double[] temp = lookInDirection(-dotSize, 0); // LEFT
+        double[] temp = lookInDirection(direction.look(dotSize, Direction.LEFT)); // LEFT
         vision[0] = temp[0];
         vision[1] = temp[1];
-        vision[2] = temp[2];
-        temp = lookInDirection(-dotSize, -dotSize); // LEFT TOP
-        vision[3] = temp[0];
-        vision[4] = temp[1];
-        vision[5] = temp[2];
-        temp = lookInDirection(0, -dotSize); // TOP
+        temp = lookInDirection(direction.look(dotSize, Direction.UP)); // TOP
+        vision[2] = temp[0];
+        vision[3] = temp[1];
+        temp = lookInDirection(direction.look(dotSize, Direction.RIGHT)); // RIGHT
+        vision[4] = temp[0];
+        vision[5] = temp[1];
+        temp = lookInDirection(direction.look(dotSize, Direction.DOWN)); // DOWN
         vision[6] = temp[0];
         vision[7] = temp[1];
-        vision[8] = temp[2];
-        temp = lookInDirection(dotSize, -dotSize); // RIGHT TOP
-        vision[9] = temp[0];
-        vision[10] = temp[1];
-        vision[11] = temp[2];
-        temp = lookInDirection(dotSize, 0); // RIGHT
-        vision[12] = temp[0];
-        vision[13] = temp[1];
-        vision[14] = temp[2];
-        temp = lookInDirection(dotSize, dotSize); // RIGHT DOWN
-        vision[15] = temp[0];
-        vision[16] = temp[1];
-        vision[17] = temp[2];
-        temp = lookInDirection(0, dotSize); // DOWN
-        vision[18] = temp[0];
-        vision[19] = temp[1];
-        vision[20] = temp[2];
-        temp = lookInDirection(-dotSize, dotSize);//LEFT DONW
-        vision[21] = temp[0];
-        vision[22] = temp[1];
-        vision[23] = temp[2];
 
-//        switch (direction) {
-//            case RIGHT:
-//                vision[24] = 1;
-//                vision[25] = 0;
-//                vision[26] = 0;
-//                vision[27] = 0;
-//                break;
-//            case UP:
-//                vision[24] = 0;
-//                vision[25] = 1;
-//                vision[26] = 0;
-//                vision[27] = 0;
-//                break;
-//            case DOWN:
-//                vision[24] = 0;
-//                vision[25] = 0;
-//                vision[26] = 1;
-//                vision[27] = 0;
-//                break;
-//            case LEFT:
-//                vision[24] = 0;
-//                vision[25] = 0;
-//                vision[26] = 0;
-//                vision[27] = 1;
-//                break;
-//        }
+//        temp = lookInDirection(-dotSize, -dotSize); // LEFT TOP
+//        vision[8] = temp[0];
+//        vision[9] = temp[1];
+//        temp = lookInDirection(dotSize, -dotSize); // RIGHT TOP
+//        vision[10] = temp[0];
+//        vision[11] = temp[1];
+//        temp = lookInDirection(dotSize, dotSize); // RIGHT DOWN
+//        vision[12] = temp[0];
+//        vision[13] = temp[1];
+//        temp = lookInDirection(-dotSize, dotSize);//LEFT DONW
+//        vision[14] = temp[0];
+//        vision[15] = temp[1];
+
+
+
     }
 
-    double[] lookInDirection(int X, int Y) {  //look in a direction and check for food, body and wall
-        double look[] = new double[output_count];
+    double[] lookInDirection(int[] XY) {  //look in a direction and check for food, body and wall
+        double look[] = new double[look_count];
+
+        int X = XY[0];
+        int Y = XY[1];
 
         int head_x = x[0];
         int head_y = y[0];
@@ -468,13 +440,11 @@ public class Snake implements Serializable {
         while (!wallCollide(head_x, head_y)) {
             if (!foodFound && foodCollide(head_x, head_y)) {
                 foodFound = true;
-//                look[0] = 1 / distance;
                 look[0] = 1;
             }
             if (!bodyFound && bodyCollide(head_x, head_y)) {
                 bodyFound = true;
-//                look[1] = 1 / distance;
-                look[1] = 1;
+                look[1] = new BigDecimal(1 / distance).setScale(2, RoundingMode.HALF_UP).doubleValue();
             }
 
             head_x += X;
@@ -482,8 +452,10 @@ public class Snake implements Serializable {
             distance += 1;
         }
 
-        look[2] = 1 / distance;
-//        look[2] = 1;
+        if (look[1] == 0.00) {
+            look[1] = new BigDecimal(1 / distance).setScale(2, RoundingMode.HALF_UP).doubleValue();
+        }
+
         return look;
     }
 

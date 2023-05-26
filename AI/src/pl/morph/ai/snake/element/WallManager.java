@@ -1,5 +1,7 @@
 package pl.morph.ai.snake.element;
 
+import pl.morph.ai.snake.page.Board;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,10 +9,14 @@ public class WallManager {
     public static List<Wall> prepareWalls(int dotSize) {
         List<Wall> walls = new ArrayList<>();
 
+        int rows = Board.B_HEIGHT / dotSize;
+        int columns = Board.B_WIDTH / dotSize;
 
-        walls.addAll(addInLine(120, 120, dotSize, 15, 1));
+//        walls.addAll(addInLine(-1 * dotSize, ((rows /2)-1) * dotSize, dotSize, 10, 1));
+//        walls.addAll(addInLine((columns-11) * dotSize, ((rows /2)-1) * dotSize, dotSize, 10, 1));
 
-        walls.addAll(addInLine(120, 420, dotSize, 15, 1));
+
+
 
         return walls;
 
