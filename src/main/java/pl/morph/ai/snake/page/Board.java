@@ -24,7 +24,7 @@ public class Board extends JPanel implements ActionListener {
     //Speed of pl.morph.ai.snake
     private int DELAY = 0;
     //Size of pl.morph.ai.snake
-    private int DOT_SIZE = 80;
+    private int DOT_SIZE = 10;
 
     private String SAVE_PATH = "C:\\repo\\github\\AI";
 
@@ -39,7 +39,7 @@ public class Board extends JPanel implements ActionListener {
     public static double MUTATION_RATE = 0.03;
 
     public static double CROSSOVER_RATE = 0.9;
-    public static double SAVE_SNAKE_RATIO = 1;
+    public static double SAVE_SNAKE_RATIO = 0.5;
     public static double avgFitness = 0;
 
     private boolean humanPlaying;
@@ -264,8 +264,8 @@ public class Board extends JPanel implements ActionListener {
 
         while (newSnakes.size() != AISnakes) {
             for (int i = 0; i < (snakes.size() * SAVE_SNAKE_RATIO); i++) {
-                Snake child = selectParent(true);
-                Snake parent = snakes.get(i);
+                Snake child = selectParent();
+                Snake parent = selectParent();
 
                 Snake snakey = parent.cloneThis();
                 if (i == 0) {
@@ -335,14 +335,23 @@ public class Board extends JPanel implements ActionListener {
 //        return snakes.get(0);
 //    }
 
-    Snake selectParent(boolean child) {  //selects a random number in range of the fitnesssum and if a pl.morph.ai.snake falls in that range then select it
-        double rand = Matrix.random(0, snakes.size() * SAVE_SNAKE_RATIO);
-        int floor = (int)rand;
-
-        if (bestOnly && !child) {
+    Snake selectParent() {  //selects a random number in range of the fitnesssum and if a pl.morph.ai.snake falls in that range then select it
+        double rand = Matrix.random(0, fitnessSum);
+        double summation = 0;
+        if (bestOnly) {
             return snakes.get(0);
         }
-        return snakes.get(floor);
+        if (scores.getGeneration() % 100 == 0) {
+            return snakes.get(0);
+        }
+        for (int i = 0; i < snakes.size() * SAVE_SNAKE_RATIO; i++) {
+            summation += snakes.get(i).getFitness();
+            if (summation > rand) {
+                found++;
+                return snakes.get(i);
+            }
+        }
+        return snakes.get(0);
     }
 
     void setBestSnake() {  //set the best pl.morph.ai.snake of the generation
