@@ -570,7 +570,7 @@ public class Board extends JPanel implements ActionListener {
             if (returnVal == JFileChooser.APPROVE_OPTION) {
                 File file = fc.getSelectedFile();
                 //This is where a real application would open the file.
-                FileInputStream streamIn = new FileInputStream(file.getName());
+                FileInputStream streamIn = new FileInputStream(file.getAbsoluteFile());
                 ObjectInputStream objectinputstream = new ObjectInputStream(streamIn);
                 this.snakes = null;
                 List<Snake> readCase = (List<Snake>) objectinputstream.readObject();
