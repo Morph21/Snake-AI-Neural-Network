@@ -1,6 +1,6 @@
 # Snake AI
 
-Best snake video, it's speed up a bit since on normal speed it takes 15 minutes
+Best snake video 313 out of 396 max points, it's speed up a bit since on normal speed it takes 15 minutes
 
 https://github.com/Morph21/Snake-AI-Neural-Network/assets/38075691/8f953d2a-483f-4f4e-b406-68ba8923b8de
 
