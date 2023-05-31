@@ -24,7 +24,7 @@ public class Board extends JPanel implements ActionListener {
     //Speed of pl.morph.ai.snake
     private int DELAY = 0;
     //Size of pl.morph.ai.snake
-    private int DOT_SIZE = 10;
+    private int DOT_SIZE = 40;
 
     private String SAVE_PATH = "C:\\repo\\github\\AI";
 
@@ -162,6 +162,7 @@ public class Board extends JPanel implements ActionListener {
                 wall.doDrawing(g);
             }
         }
+        Toolkit.getDefaultToolkit().sync();
     }
 
     private void gameOver(Graphics g) {
@@ -291,9 +292,7 @@ public class Board extends JPanel implements ActionListener {
                         snakey.setShowIt(true);
                     }
                 } else {
-                    if (i < 11) {
-                        snakey.setShowIt(true);
-                    }
+                    snakey.setShowIt(true);
                 }
                 snakey.spawnApple();
                 newSnakes.add(i, snakey);
@@ -413,7 +412,6 @@ public class Board extends JPanel implements ActionListener {
             } else {
                 if (key == KeyEvent.VK_S) {
                     showOnlyFirstSnake = !showOnlyFirstSnake;
-                    int i = 0;
                     for (Snake snake : snakes) {
                         if (showOnlyFirstSnake) {
                             if (snake.isBestSnake()) {
@@ -421,14 +419,8 @@ public class Board extends JPanel implements ActionListener {
                             } else {
                                 snake.setShowIt(false);
                             }
-                            i++;
                         } else {
-                            if (i < 11) {
-
-
                             snake.setShowIt(true);
-                            i++;
-                            }
                         }
                     }
                 }

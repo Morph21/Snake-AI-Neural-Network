@@ -56,10 +56,10 @@ public class Snake implements Serializable {
     private int hidden_nodes = 24;
     private double mutationRate;
 
-    final int input_count = 18;
+    final int input_count = 14;
     final int output_count = 3;
 
-    final int look_count = 2;
+    final int look_count = 3;
     double vision[] = new double[input_count];
     double decision[] = new double[output_count];
 
@@ -178,7 +178,7 @@ public class Snake implements Serializable {
         appleToEat = randomizeApple();
         for (int i = 0; i < length; i++) {
             while ((appleToEat.getApple_x() == x[i] && appleToEat.getApple_y() == y[i]) || wallCollide(appleToEat.getApple_x(),
-                                                                                                       appleToEat.getApple_y())) {
+                    appleToEat.getApple_y())) {
                 appleToEat = randomizeApple();
             }
         }
@@ -224,7 +224,6 @@ public class Snake implements Serializable {
 
                 }
             }
-//            Toolkit.getDefaultToolkit().sync();
         } else {
             if (bestSnake) {
                 for (int z = 0; z < length; z++) {
@@ -290,23 +289,23 @@ public class Snake implements Serializable {
         }
     }
 
-//    public void calculateFitness() {  //calculate the fitness of the pl.morph.ai.snake
-////        fitness = floor(lifetime * lifetime) * pow(5, snakeScore.getScore());
-//
-//        if (snakeScore.getScore() < 10) {
-//            fitness = floor(lifetime * lifetime) * pow(2, snakeScore.getScore());
-//        } else {
-//            fitness = floor(lifetime * lifetime);
-//            fitness *= pow(2, 10);
-//            fitness *= (snakeScore.getScore() - 9);
-//        }
-//        setHighestFitness();
-//    }
-
     public void calculateFitness() {  //calculate the fitness of the pl.morph.ai.snake
-        fitness = 200 * snakeScore.getScore();
+//        fitness = floor(lifetime * lifetime) * pow(5, snakeScore.getScore());
+
+        if (snakeScore.getScore() < 10) {
+            fitness = floor(lifetime * lifetime) * pow(2, snakeScore.getScore());
+        } else {
+            fitness = floor(lifetime * lifetime);
+            fitness *= pow(2, 10);
+            fitness *= (snakeScore.getScore() - 9);
+        }
         setHighestFitness();
     }
+
+//    public void calculateFitness() {  //calculate the fitness of the pl.morph.ai.snake
+//        fitness = 200 * snakeScore.getScore();
+//        setHighestFitness();
+//    }
 
 //    public void calculateFitness() {  //calculate the fitness of the pl.morph.ai.snake
 //        fitness = lifetime + (pow(2, snakeScore.getScore()) + pow(snakeScore.getScore(),
@@ -413,28 +412,36 @@ public class Snake implements Serializable {
         double[] temp = lookInDirection(direction.look(dotSize, Direction.LEFT)); // LEFT
         vision[2] = temp[0];
         vision[3] = temp[1];
+        vision[4] = temp[2];
         temp = lookInDirection(direction.look(dotSize, Direction.UP)); // TOP
-        vision[4] = temp[0];
-        vision[5] = temp[1];
+        vision[5] = temp[0];
+        vision[6] = temp[1];
+        vision[7] = temp[2];
         temp = lookInDirection(direction.look(dotSize, Direction.RIGHT)); // RIGHT
-        vision[6] = temp[0];
-        vision[7] = temp[1];
-        temp = lookInDirection(direction.look(dotSize, Direction.DOWN)); // DOWN
         vision[8] = temp[0];
         vision[9] = temp[1];
+        vision[10] = temp[2];
 
-        temp = lookInDirection(direction.look(dotSize, Direction.TOP_LEFT));  // LEFT TOP
-        vision[10] = temp[0];
+        temp = lookInDirection(direction.look(dotSize, Direction.DOWN)); // DOWN
+        vision[11] = temp[0];
         vision[12] = temp[1];
-        temp = lookInDirection(direction.look(dotSize, Direction.TOP_RIGHT));  // RIGHT TOP
-        vision[12] = temp[0];
-        vision[13] = temp[1];
-        temp = lookInDirection(direction.look(dotSize, Direction.DOWN_RIGHT)); // RIGHT DOWN
-        vision[14] = temp[0];
-        vision[15] = temp[1];
-        temp = lookInDirection(direction.look(dotSize, Direction.DOWN_LEFT)); //LEFT DONW
-        vision[16] = temp[0];
-        vision[17] = temp[1];
+        vision[13] = temp[2];
+
+
+//        temp = lookInDirection(direction.look(dotSize, Direction.TOP_LEFT));  // LEFT TOP
+//        vision[10] = temp[0];
+//        vision[11] = temp[1];
+//
+//        temp = lookInDirection(direction.look(dotSize, Direction.TOP_RIGHT));  // RIGHT TOP
+//        vision[12] = temp[0];
+//        vision[13] = temp[1];
+//        temp = lookInDirection(direction.look(dotSize, Direction.DOWN_RIGHT)); // RIGHT DOWN
+//        vision[14] = temp[0];
+//        vision[15] = temp[1];
+//        temp = lookInDirection(direction.look(dotSize, Direction.DOWN_LEFT)); // LEFT DOWN
+//        vision[16] = temp[0];
+//        vision[17] = temp[1];
+
 
 
     }
@@ -458,10 +465,12 @@ public class Snake implements Serializable {
             if (!foodFound && foodCollide(head_x, head_y)) {
                 foodFound = true;
                 look[0] = 1;
+
             }
             if (!bodyFound && bodyCollide(head_x, head_y)) {
                 bodyFound = true;
-                look[1] = new BigDecimal(1 / distance).setScale(2, RoundingMode.HALF_UP).doubleValue();
+                look[1] = new BigDecimal(1 / distance).setScale(1, RoundingMode.HALF_UP).doubleValue();
+
             }
 
             head_x += X;
@@ -469,9 +478,9 @@ public class Snake implements Serializable {
             distance += 1;
         }
 
-        if (look[1] == 0.00) {
-            look[1] = new BigDecimal(1 / distance).setScale(2, RoundingMode.HALF_UP).doubleValue();
-        }
+
+        look[2] = new BigDecimal(1 / distance).setScale(1, RoundingMode.HALF_UP).doubleValue();
+
 
         return look;
     }
@@ -599,11 +608,11 @@ public class Snake implements Serializable {
     }
 
     private Direction tailDirection() {
-        int xLast = x[x.length - 1];
-        int yLast = y[y.length - 1];
+        int xLast = x[length - 1];
+        int yLast = y[length - 1];
 
-        int xBeforeLast = x[x.length - 2];
-        int yBeforeLast = y[y.length - 2];
+        int xBeforeLast = x[length - 2];
+        int yBeforeLast = y[length - 2];
 
         if (xLast == xBeforeLast) {
             if (yBeforeLast > yLast) {
