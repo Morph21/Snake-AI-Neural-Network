@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 
 import static java.lang.Math.floor;
@@ -176,13 +177,81 @@ public class Snake implements Serializable {
 
     private void randomApple() {
         appleToEat = randomizeApple();
+
+        List<XY> boardTable = populate(rand_pos_x, rand_pos_y);
+
         for (int i = 0; i < length; i++) {
-            while ((appleToEat.getApple_x() == x[i] && appleToEat.getApple_y() == y[i])
-                    || wallCollide(appleToEat.getApple_x(), appleToEat.getApple_y())) {
-                appleToEat = randomizeApple();
+            boardTable.remove(new XY(x[i], y[i]));
+        }
+
+        if (walls != null && !walls.isEmpty()) {
+            for (Wall wall : walls) {
+                boardTable.remove(new XY(wall.getX(), wall.getY()));
             }
         }
+
+        int temp  = (int) (Math.random() * boardTable.size());
+        XY xy = boardTable.get(temp);
+
+        appleToEat = new Apple(xy.getX() * dotSize, xy.getY() * dotSize);
+
+
+//        for (int i = 0; i < length; i++) {
+//            while ((appleToEat.getApple_x() == x[i] && appleToEat.getApple_y() == y[i])
+//                    || wallCollide(appleToEat.getApple_x(), appleToEat.getApple_y())) {
+//                appleToEat = randomizeApple();
+//            }
+//        }
         foodList.add(appleToEat);
+    }
+
+    public List<XY> populate(int maxX, int maxY) {
+        List<XY> boardTable = new ArrayList<>();
+        for (int x = 0; x <= maxX; x++) {
+            for (int y = 0; y <= maxY; y++) {
+                boardTable.add(new XY(x,y));
+            }
+        }
+        return boardTable;
+    }
+
+    class XY {
+        private int x;
+        private int y;
+
+        public XY(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+
+        public int getX() {
+            return x;
+        }
+
+        public void setX(int x) {
+            this.x = x;
+        }
+
+        public int getY() {
+            return y;
+        }
+
+        public void setY(int y) {
+            this.y = y;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            XY xy = (XY) o;
+            return x == xy.x && y == xy.y;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(x, y);
+        }
     }
 
     private Apple randomizeApple() {
