@@ -83,8 +83,8 @@ public class Snake implements Serializable {
         this.y = new int[max_length];
         this.rand_pos_x = boardWidth / dotSize;
         this.rand_pos_y = boardHeight / dotSize;
-        this.maxLife = ((boardWidth / dotSize) * 10);
-        timeLeft = (boardWidth / dotSize) * 10;
+        this.maxLife = ((boardWidth / dotSize) * 15);
+        timeLeft = (boardWidth / dotSize) * 15;
         this.lifeForApple = maxLife;
 
         this.walls = walls;
@@ -177,8 +177,8 @@ public class Snake implements Serializable {
     private void randomApple() {
         appleToEat = randomizeApple();
         for (int i = 0; i < length; i++) {
-            while ((appleToEat.getApple_x() == x[i] && appleToEat.getApple_y() == y[i]) || wallCollide(appleToEat.getApple_x(),
-                    appleToEat.getApple_y())) {
+            while ((appleToEat.getApple_x() == x[i] && appleToEat.getApple_y() == y[i])
+                    || wallCollide(appleToEat.getApple_x(), appleToEat.getApple_y())) {
                 appleToEat = randomizeApple();
             }
         }
@@ -304,7 +304,7 @@ public class Snake implements Serializable {
 
 //    public void calculateFitness() {  //calculate the fitness of the pl.morph.ai.snake
 //        fitness = 200 * snakeScore.getScore();
-//        setHighestFitness();
+//        setHighestFitness();d
 //    }
 
 //    public void calculateFitness() {  //calculate the fitness of the pl.morph.ai.snake
@@ -573,7 +573,7 @@ public class Snake implements Serializable {
 //    }
 
     private void checkDirection(int value) {
-        if (value == 1) { // LEFT
+        if (value == 0) { // LEFT
             switch (direction) {
                 case LEFT:
                     direction = Direction.DOWN;
@@ -588,7 +588,7 @@ public class Snake implements Serializable {
                     direction = Direction.UP;
                     break;
             }
-        } else if (value == 2) { // RIGHT
+        } else if (value == 1) { // RIGHT
             switch (direction) {
                 case LEFT:
                     direction = Direction.UP;
@@ -603,7 +603,7 @@ public class Snake implements Serializable {
                     direction = Direction.DOWN;
                     break;
             }
-        } else if (value == 3) { // MOVE FORWARD
+        } else if (value == 2) { // MOVE FORWARD
         }
     }
 
