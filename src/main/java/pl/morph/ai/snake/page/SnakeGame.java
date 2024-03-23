@@ -2,6 +2,9 @@ package pl.morph.ai.snake.page;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.*;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class SnakeGame extends JFrame {
 
@@ -11,7 +14,6 @@ public class SnakeGame extends JFrame {
     }
 
     public static void main(String[] args) {
-
         EventQueue.invokeLater(() -> {
             JFrame ex = new SnakeGame();
             ex.setVisible(true);

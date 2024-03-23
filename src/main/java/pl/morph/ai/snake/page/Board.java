@@ -101,7 +101,7 @@ public class Board extends JPanel implements ActionListener {
     private void createHumanSnake() {
         this.snake = new Snake(B_WIDTH, B_HEIGHT, DELAY, humanPlaying, null, DOT_SIZE, walls);
         this.snake.setShowIt(true);
-        placeSnakeOnMiddle(this.snake);
+        placeSnakeRandomly(this.snake);
 
         snake.spawnApple();
     }
@@ -112,7 +112,8 @@ public class Board extends JPanel implements ActionListener {
         for (int i = 0; i < AINumber; i++) {
 
             this.snake = new Snake(B_WIDTH, B_HEIGHT, DELAY, humanPlaying, null, DOT_SIZE, walls);
-            placeSnakeOnMiddle();
+//            placeSnakeOnMiddle();
+            placeSnakeRandomly(snake);
             if (showOnlyFirstSnake) {
                 if (snakes.size() == 0) {
                     this.snake.setShowIt(true);
@@ -125,18 +126,15 @@ public class Board extends JPanel implements ActionListener {
         }
     }
 
-    public void placeSnakeOnMiddle() {
-        for (int z = 0; z < snake.getLength(); z++) {
-            snake.getX()[z] = B_WIDTH / 2 - z * DOT_SIZE;
-            snake.getY()[z] = B_HEIGHT / 2;
-        }
-    }
+    public void placeSnakeRandomly(Snake snake) {
 
-    public void placeSnakeOnMiddle(Snake snake) {
-        for (int z = 0; z < snake.getLength(); z++) {
-            snake.getX()[z] = B_WIDTH / 2 - z * DOT_SIZE;
-            snake.getY()[z] = B_HEIGHT / 2;
-        }
+        List<Snake.XY> boardList = snake.populate(B_WIDTH / DOT_SIZE, B_HEIGHT / DOT_SIZE);
+
+        int index = (int)(Math.random() * boardList.size());
+
+        Snake.XY xy = boardList.get(index);
+
+        snake.setStartingPosition(xy);
     }
 
     @Override
@@ -193,6 +191,10 @@ public class Board extends JPanel implements ActionListener {
         } else {
             scores.setDeadSnakes(0);
             snakes.parallelStream().forEach(snake -> {
+
+                if (snake.getScore() == ((B_HEIGHT / DOT_SIZE) * (B_WIDTH / DOT_SIZE))  - 1) {
+                    timer.stop();
+                }
 
                 if (snake.isBestSnake()) {
                     scores.setScore((new Score()).setScore(snake.getScore()));
@@ -257,7 +259,6 @@ public class Board extends JPanel implements ActionListener {
         best.setScores(scores);
         best.setShowIt(true);
         best.spawnApple();
-        placeSnakeOnMiddle(best);
         int mutations = 0;
 
         newSnakes.add(best);  //add the best 9snake of the prior generation into the new generation
@@ -286,7 +287,7 @@ public class Board extends JPanel implements ActionListener {
                 snakey.setBrain(brain);
                 snakey.setBestSnake(false);
                 snakey.setScores(null);
-                placeSnakeOnMiddle(snakey);
+                placeSnakeRandomly(snakey);
                 if (showOnlyFirstSnake) {
                     if (newSnakes.size() == 0) {
                         snakey.setShowIt(true);
@@ -341,7 +342,7 @@ public class Board extends JPanel implements ActionListener {
             return snakes.get(0);
         }
         if (scores.getGeneration() % 100 == 0) {
-            return snakes.get(0);
+//            return snakes.get(0);
         }
         for (int i = 0; i < snakes.size() * SAVE_SNAKE_RATIO; i++) {
             summation += snakes.get(i).getFitness();

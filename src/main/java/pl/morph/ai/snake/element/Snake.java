@@ -30,7 +30,7 @@ public class Snake implements Serializable {
     //Size of dot
     private int dotSize;
     private Apple appleToEat;
-    private int length = 4;
+    private int length = 1;
     private int x[];
     private int y[];
     private Score snakeScore;
@@ -63,6 +63,8 @@ public class Snake implements Serializable {
     final int look_count = 3;
     double vision[] = new double[input_count];
     double decision[] = new double[output_count];
+
+    private XY startingPosition;
 
     private List<Wall> walls;
 
@@ -113,6 +115,7 @@ public class Snake implements Serializable {
         clone.brain = brain.clone();
         clone.direction = this.startingDirection;
         clone.startingDirection = this.startingDirection;
+        clone.setStartingPosition(this.startingPosition);
         return clone;
     }
 
@@ -181,19 +184,21 @@ public class Snake implements Serializable {
         List<XY> boardTable = populate(rand_pos_x, rand_pos_y);
 
         for (int i = 0; i < length; i++) {
-            boardTable.remove(new XY(x[i], y[i]));
+            boardTable.remove(new XY(x[i] / dotSize, y[i] / dotSize));
         }
 
         if (walls != null && !walls.isEmpty()) {
             for (Wall wall : walls) {
-                boardTable.remove(new XY(wall.getX(), wall.getY()));
+                boardTable.remove(new XY(wall.getX() / dotSize, wall.getY() / dotSize));
             }
         }
 
-        int temp  = (int) (Math.random() * boardTable.size());
-        XY xy = boardTable.get(temp);
+        int temp = (int) (Math.random() * (boardTable.size() - 1));
 
-        appleToEat = new Apple(xy.getX() * dotSize, xy.getY() * dotSize);
+        if (boardTable.size() > 0) {
+            XY xy = boardTable.get(temp);
+            appleToEat = new Apple(xy.getX() * dotSize, xy.getY() * dotSize);
+        }
 
 
 //        for (int i = 0; i < length; i++) {
@@ -207,15 +212,15 @@ public class Snake implements Serializable {
 
     public List<XY> populate(int maxX, int maxY) {
         List<XY> boardTable = new ArrayList<>();
-        for (int x = 0; x <= maxX; x++) {
-            for (int y = 0; y <= maxY; y++) {
-                boardTable.add(new XY(x,y));
+        for (int x = 0; x < maxX; x++) {
+            for (int y = 0; y < maxY; y++) {
+                boardTable.add(new XY(x, y));
             }
         }
         return boardTable;
     }
 
-    class XY {
+    public class XY implements Serializable {
         private int x;
         private int y;
 
@@ -289,6 +294,7 @@ public class Snake implements Serializable {
                         g.fillRect(x[z], y[z], dotSize - 1, dotSize - 1);
                         g.setColor(Color.white);
                         g.drawRect(x[z], y[z], dotSize, dotSize);
+
                     }
 
                 }
@@ -438,8 +444,10 @@ public class Snake implements Serializable {
                 inGame = false;
             }
             for (int z = length; z > 0; z--) {
+
                 x[z] = x[(z - 1)];
                 y[z] = y[(z - 1)];
+
             }
             switch (direction) {
                 case LEFT:
@@ -498,19 +506,22 @@ public class Snake implements Serializable {
 
 
 //        temp = lookInDirection(direction.look(dotSize, Direction.TOP_LEFT));  // LEFT TOP
-//        vision[10] = temp[0];
-//        vision[11] = temp[1];
-//
-//        temp = lookInDirection(direction.look(dotSize, Direction.TOP_RIGHT));  // RIGHT TOP
-//        vision[12] = temp[0];
-//        vision[13] = temp[1];
-//        temp = lookInDirection(direction.look(dotSize, Direction.DOWN_RIGHT)); // RIGHT DOWN
 //        vision[14] = temp[0];
 //        vision[15] = temp[1];
+//        vision[16] = temp[2];
+//
+//        temp = lookInDirection(direction.look(dotSize, Direction.TOP_RIGHT));  // RIGHT TOP
+//        vision[17] = temp[0];
+//        vision[18] = temp[1];
+//        vision[19] = temp[2];
+//        temp = lookInDirection(direction.look(dotSize, Direction.DOWN_RIGHT)); // RIGHT DOWN
+//        vision[20] = temp[0];
+//        vision[21] = temp[1];
+//        vision[22] = temp[2];
 //        temp = lookInDirection(direction.look(dotSize, Direction.DOWN_LEFT)); // LEFT DOWN
-//        vision[16] = temp[0];
-//        vision[17] = temp[1];
-
+//        vision[23] = temp[0];
+//        vision[24] = temp[1];
+//        vision[25] = temp[2];
 
 
     }
@@ -534,7 +545,6 @@ public class Snake implements Serializable {
             if (!foodFound && foodCollide(head_x, head_y)) {
                 foodFound = true;
                 look[0] = 1;
-
             }
             if (!bodyFound && bodyCollide(head_x, head_y)) {
                 bodyFound = true;
@@ -680,6 +690,10 @@ public class Snake implements Serializable {
         int xLast = x[length - 1];
         int yLast = y[length - 1];
 
+        if (length < 2) {
+            return direction;
+        }
+
         int xBeforeLast = x[length - 2];
         int yBeforeLast = y[length - 2];
 
@@ -751,5 +765,15 @@ public class Snake implements Serializable {
 
     public void setWalls(List<Wall> walls) {
         this.walls = walls;
+    }
+
+    public void setStartingPosition(XY startingPosition) {
+        this.startingPosition = startingPosition;
+        x[0] = startingPosition.getX() * dotSize;
+        y[0] = startingPosition.getY() * dotSize;
+    }
+
+    public XY getStartingPosition() {
+        return this.startingPosition;
     }
 }

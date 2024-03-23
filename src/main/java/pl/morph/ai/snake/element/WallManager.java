@@ -12,8 +12,16 @@ public class WallManager {
         int rows = Board.B_HEIGHT / dotSize;
         int columns = Board.B_WIDTH / dotSize;
 
-//        walls.addAll(addInLine(-1 * dotSize, ((rows /2)-1) * dotSize, dotSize, 10, 1));
-//        walls.addAll(addInLine((columns-11) * dotSize, ((rows /2)-1) * dotSize, dotSize, 10, 1));
+//        walls.addAll(addInLine(2 * dotSize, ((rows /2)-7) * dotSize, dotSize, 14, 1));
+//        walls.addAll(addInLine(2 * dotSize, ((rows /2)+5) * dotSize, dotSize, 14, 1));
+
+//        walls.addAll(addInLine(2 * dotSize, ((rows /2)-7) * dotSize, dotSize, 1, 5));
+//        walls.addAll(addInLine(16 * dotSize, ((rows /2)-7) * dotSize, dotSize, 1, 5));
+//
+//
+//        walls.addAll(addInLine(2 * dotSize, ((rows /2)+1) * dotSize, dotSize, 1, 5));
+//        walls.addAll(addInLine(16 * dotSize, ((rows /2)+1) * dotSize, dotSize, 1, 5));
+
 
 
 
