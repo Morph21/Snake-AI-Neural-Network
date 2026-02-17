@@ -190,7 +190,7 @@ public class Board extends JPanel implements ActionListener {
             }
         } else {
             scores.setDeadSnakes(0);
-            snakes.parallelStream().forEach(snake -> {
+            for (Snake snake : snakes) {
 
                 if (snake.getScore() == ((B_HEIGHT / DOT_SIZE) * (B_WIDTH / DOT_SIZE))  - 1) {
                     timer.stop();
@@ -216,7 +216,7 @@ public class Board extends JPanel implements ActionListener {
                 } else {
                     scores.incrementDeadSnakes();
                 }
-            });
+            }
 //            for (Snake pl.morph.ai.snake : snakes) {
 //            }
 
@@ -240,9 +240,9 @@ public class Board extends JPanel implements ActionListener {
     }
 
     void calculateFitness() {  //calculate the fitnesses for each pl.morph.ai.snake
-        snakes.parallelStream().forEach(snake -> {
+        for (Snake snake : snakes) {
             snake.calculateFitness();
-        });
+        }
 //        for (Snake pl.morph.ai.snake : snakes) {
 //        }
     }
@@ -264,8 +264,15 @@ public class Board extends JPanel implements ActionListener {
         newSnakes.add(best);  //add the best 9snake of the prior generation into the new generation
         found = 0;
 
-        while (newSnakes.size() != AISnakes) {
-            for (int i = 0; i < (snakes.size() * SAVE_SNAKE_RATIO); i++) {
+        int safetyLimit = AISnakes * 10;
+        int iterations = 0;
+        int innerLimit = Math.max(1, (int)(snakes.size() * SAVE_SNAKE_RATIO));
+        while (newSnakes.size() < AISnakes) {
+            if (++iterations > safetyLimit) {
+                System.out.println("Warning: naturalSelection safety limit reached");
+                break;
+            }
+            for (int i = 0; i < innerLimit; i++) {
                 Snake child = selectParent();
                 Snake parent = selectParent();
 
@@ -458,8 +465,8 @@ public class Board extends JPanel implements ActionListener {
 
                 if (key == 111) {
                     SAVE_SNAKE_RATIO -= 0.1;
-                    if (SAVE_SNAKE_RATIO <= 0) {
-                        SAVE_SNAKE_RATIO = 0.01;
+                    if (SAVE_SNAKE_RATIO < 0.1) {
+                        SAVE_SNAKE_RATIO = 0.1;
                     }
                     scores.repaint();
                 }
@@ -516,11 +523,12 @@ public class Board extends JPanel implements ActionListener {
     private void autoSave() {
         try {
             if (fileName != null && !fileName.isEmpty()) {
-                FileOutputStream fout = new FileOutputStream(fileName);
-                ObjectOutputStream oos = new ObjectOutputStream(fout);
-                oos.writeObject(snakes);
-                saveWaiting = false;
-                System.out.println("Auto save triggered");
+                try (FileOutputStream fout = new FileOutputStream(fileName);
+                     ObjectOutputStream oos = new ObjectOutputStream(fout)) {
+                    oos.writeObject(snakes);
+                    saveWaiting = false;
+                    System.out.println("Auto save triggered");
+                }
             }
         } catch (Exception e) {
             System.out.println("AutoSave failed");
@@ -535,24 +543,24 @@ public class Board extends JPanel implements ActionListener {
             int returnVal = fc.showSaveDialog(this);
             if (returnVal == JFileChooser.APPROVE_OPTION) {
                 File file = fc.getSelectedFile();
-                //This is where a real application would open the file.
-                fileName = file.getName();
-                FileOutputStream fout = new FileOutputStream(fileName);
-                ObjectOutputStream oos = new ObjectOutputStream(fout);
-                snakes.sort(Comparator.comparingDouble(Snake::getFitness).reversed());
-                if (snakes.size() > 1000) {
-                    List<Snake> smallerList = new ArrayList<>();
-                    int i = 0;
-                    for (Snake snake : snakes) {
-                        if (i >= 1000) {
-                            break;
+                fileName = file.getAbsolutePath();
+                try (FileOutputStream fout = new FileOutputStream(fileName);
+                     ObjectOutputStream oos = new ObjectOutputStream(fout)) {
+                    snakes.sort(Comparator.comparingDouble(Snake::getFitness).reversed());
+                    if (snakes.size() > 1000) {
+                        List<Snake> smallerList = new ArrayList<>();
+                        int i = 0;
+                        for (Snake snake : snakes) {
+                            if (i >= 1000) {
+                                break;
+                            }
+                            smallerList.add(snake);
+                            i++;
                         }
-                        smallerList.add(snake);
-                        i++;
+                        oos.writeObject(smallerList);
+                    } else {
+                        oos.writeObject(snakes);
                     }
-                    oos.writeObject(smallerList);
-                } else {
-                    oos.writeObject(snakes);
                 }
             } else {
                 System.out.println(("Open command cancelled by user."));
@@ -563,6 +571,7 @@ public class Board extends JPanel implements ActionListener {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void readFromFile() {
         try {
             final JFileChooser fc = new JFileChooser(SAVE_PATH);
@@ -570,42 +579,40 @@ public class Board extends JPanel implements ActionListener {
             int returnVal = fc.showOpenDialog(this);
             if (returnVal == JFileChooser.APPROVE_OPTION) {
                 File file = fc.getSelectedFile();
-                //This is where a real application would open the file.
-                FileInputStream streamIn = new FileInputStream(file.getAbsoluteFile());
-                ObjectInputStream objectinputstream = new ObjectInputStream(streamIn);
-                this.snakes = null;
-                List<Snake> readCase = (List<Snake>) objectinputstream.readObject();
+                List<Snake> readCase;
+                try (FileInputStream streamIn = new FileInputStream(file.getAbsoluteFile());
+                     ObjectInputStream objectinputstream = new ObjectInputStream(streamIn)) {
+                    this.snakes = null;
+                    readCase = (List<Snake>) objectinputstream.readObject();
+                }
                 System.out.println("Snakes loaded");
 
                 for (Snake snake : readCase) {
                     int dotSize = snake.getDotSize();
-                    //if (dotSize != DOT_SIZE) {
-                        snake.setDotSize(DOT_SIZE);
-                        snake.setWalls(walls);
+                    snake.setDotSize(DOT_SIZE);
+                    snake.setWalls(walls);
 
-                        List<Apple> foodList = snake.getFoodList();
-                        int diff;
-                        boolean lesser;
-                        if (dotSize > DOT_SIZE) {
-                            diff = dotSize / DOT_SIZE;
-                            lesser = false;
-                        } else {
-                            diff = DOT_SIZE / dotSize;
-                            lesser = true;
+                    List<Apple> foodList = snake.getFoodList();
+                    int diff;
+                    boolean lesser;
+                    if (dotSize > DOT_SIZE) {
+                        diff = dotSize / DOT_SIZE;
+                        lesser = false;
+                    } else {
+                        diff = DOT_SIZE / dotSize;
+                        lesser = true;
+                    }
+                    if (foodList != null) {
+                        for (Apple apple : foodList) {
+                            shiftApple(apple, lesser, diff);
                         }
-                        if (foodList != null) {
-                            for (Apple apple : foodList) {
-                                shiftApple(apple, lesser, diff);
-                            }
-                            snake.setFoodList(foodList);
-                        }
+                        snake.setFoodList(foodList);
+                    }
 
-                        Apple appleToEat = snake.getAppleToEat();
-                        if (appleToEat != null) {
-                            shiftApple(appleToEat, lesser, diff);
-                        }
-
-                    //}
+                    Apple appleToEat = snake.getAppleToEat();
+                    if (appleToEat != null) {
+                        shiftApple(appleToEat, lesser, diff);
+                    }
                 }
 
                 snakes = readCase;

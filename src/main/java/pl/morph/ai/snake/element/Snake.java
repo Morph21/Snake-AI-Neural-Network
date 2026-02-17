@@ -270,14 +270,14 @@ public class Snake implements Serializable {
 
     public void doDrawing(Graphics g) {
         if (inGame) {
-            if (showIt) {
+            if (showIt && appleToEat != null) {
                 g.setColor(Color.red);
                 g.fillRect(appleToEat.getApple_x(), appleToEat.getApple_y(), dotSize - 1, dotSize - 1);
                 g.setColor(Color.black);
                 g.drawRect(appleToEat.getApple_x(), appleToEat.getApple_y(), dotSize, dotSize);
             }
 
-            for (int z = length; z >= 0; z--) {
+            for (int z = length - 1; z >= 0; z--) {
                 if (z == 0) {
                     //head
                     if (this.showIt) {
@@ -574,7 +574,7 @@ public class Snake implements Serializable {
     }
 
     boolean foodCollide(double X, double Y) {  //check if a position collides with the food
-        if (X == appleToEat.getApple_x() && Y == appleToEat.getApple_y()) {
+        if (appleToEat != null && X == appleToEat.getApple_x() && Y == appleToEat.getApple_y()) {
             return true;
         }
         return false;
