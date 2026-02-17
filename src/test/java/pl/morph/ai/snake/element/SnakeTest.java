@@ -145,6 +145,46 @@ class SnakeTest {
     }
 
     @Test
+    void calculateFitnessScalesQuadraticallyAboveScore10() {
+        Snake s1 = new Snake(BOARD_W, BOARD_H, DELAY, false, null, DOT_SIZE, Collections.<Wall>emptyList());
+        s1.setStartingPosition(s1.new XY(5, 5));
+        s1.spawnApple();
+
+        Snake s2 = new Snake(BOARD_W, BOARD_H, DELAY, false, null, DOT_SIZE, Collections.<Wall>emptyList());
+        s2.setStartingPosition(s2.new XY(5, 5));
+        s2.spawnApple();
+
+        // Both snakes get same lifetime (20 moves)
+        for (int i = 0; i < 20; i++) {
+            s1.direction = Direction.RIGHT;
+            s1.move();
+            s2.direction = Direction.RIGHT;
+            s2.move();
+        }
+
+        // Give s1 score=50 and s2 score=100 by feeding apples
+        for (int i = 0; i < 50; i++) {
+            Apple a = new Apple(s1.getX()[0], s1.getY()[0]);
+            s1.setAppleToEat(a);
+            s1.checkApple();
+        }
+        for (int i = 0; i < 100; i++) {
+            Apple a = new Apple(s2.getX()[0], s2.getY()[0]);
+            s2.setAppleToEat(a);
+            s2.checkApple();
+        }
+
+        s1.calculateFitness();
+        s2.calculateFitness();
+
+        // With quadratic scaling, s2 (score=100) should be much more than 2x s1 (score=50)
+        // score-9 ratio: (91)^2 / (41)^2 = 8281/1681 ≈ 4.9x for the main term
+        double ratio = s2.getFitness() / s1.getFitness();
+        assertTrue(ratio > 3.0,
+            "Score 100 fitness should be >3x score 50 fitness (quadratic scaling), got ratio " + ratio);
+    }
+
+    @Test
     void cloneThisProducesIndependentSnakeWithSameBrain() {
         Snake clone = snake.cloneThis();
 

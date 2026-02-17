@@ -377,10 +377,9 @@ public class Snake implements Serializable {
         if (score < 10) {
             fitness = floor(lifetime * lifetime) * pow(2, score);
         } else {
-            fitness = floor(lifetime * lifetime) * pow(2, 10) * (score - 9);
+            fitness = floor(lifetime * lifetime) * pow(2, 10) * pow(score - 9, 2);
         }
-        // bonus that scales with score to reward eating over just surviving
-        fitness += pow(score, 3) * 1000;
+        fitness += pow(score, 4) * 500;
         setHighestFitness();
     }
 
