@@ -5,8 +5,6 @@ import pl.morph.ai.snake.page.Scores;
 
 import java.awt.*;
 import java.io.Serializable;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -537,12 +535,11 @@ public class Snake implements Serializable {
         while (!wallCollide(head_x, head_y)) {
             if (!foodFound && foodCollide(head_x, head_y)) {
                 foodFound = true;
-                look[0] = 1;
+                look[0] = 1.0 / distance;
             }
             if (!bodyFound && bodyCollide(head_x, head_y)) {
                 bodyFound = true;
-                look[1] = new BigDecimal(1 / distance).setScale(1, RoundingMode.HALF_UP).doubleValue();
-
+                look[1] = 1.0 / distance;
             }
 
             head_x += X;
@@ -550,9 +547,7 @@ public class Snake implements Serializable {
             distance += 1;
         }
 
-
-        look[2] = new BigDecimal(1 / distance).setScale(1, RoundingMode.HALF_UP).doubleValue();
-
+        look[2] = 1.0 / distance;
 
         return look;
     }

@@ -175,6 +175,38 @@ class SnakeTest {
     }
 
     @Test
+    void lookInDirectionReturnsDistinctDistancesForDifferentPositions() {
+        // Place snake at (10,5) facing RIGHT, wall at board edge (x=200)
+        snake.setLength(1);
+        snake.getX()[0] = 100;
+        snake.getY()[0] = 50;
+        snake.direction = Direction.RIGHT;
+
+        // Place body segment at distance 3 (x=130) to the right
+        snake.setLength(3);
+        snake.getX()[1] = 130;
+        snake.getY()[1] = 50;
+        snake.getX()[2] = 140;
+        snake.getY()[2] = 50;
+
+        // Look right: wall distance = 1/(cells to wall), body distance = 1/3
+        int[] rightDir = {DOT_SIZE, 0};
+        double[] result = snake.lookInDirection(rightDir);
+
+        // Body at distance 3 -> 1/3 = 0.3333...
+        double bodyDist = result[1];
+        assertTrue(bodyDist > 0.33 && bodyDist < 0.34,
+            "Body distance at 3 cells should be ~0.333, got " + bodyDist);
+
+        // Wall distance should be precise, not rounded
+        double wallDist = result[2];
+        // Wall is at x=200, head at x=100, dotSize=10, so (200-100)/10 = 10 cells away
+        // But body blocks at 3, wall is at distance 10: 1/10 = 0.1
+        assertTrue(wallDist > 0.09 && wallDist < 0.11,
+            "Wall distance should be ~0.1, got " + wallDist);
+    }
+
+    @Test
     void checkAppleIncrementsScoreAndLength() {
         int scoreBefore = snake.getScore();
         int lengthBefore = snake.getLength();
