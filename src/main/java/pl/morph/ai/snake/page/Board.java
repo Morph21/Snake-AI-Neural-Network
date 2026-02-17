@@ -34,7 +34,7 @@ public class Board extends JPanel implements ActionListener {
     private List<Snake> snakes;
     private int highScore = 0;
     private double bestFitness;
-    private float fitnessSum;
+    private double fitnessSum;
     private int samebest = 0;
     public static double MUTATION_RATE = 0.03;
 
@@ -210,9 +210,6 @@ public class Board extends JPanel implements ActionListener {
                         saveWaiting = true;
                     }
 
-                    if (snake.getFitness() > scores.getHighestFitness()) {
-                        scores.setHighestFitness(snake.getFitness());
-                    }
                 } else {
                     scores.incrementDeadSnakes();
                 }
@@ -253,7 +250,11 @@ public class Board extends JPanel implements ActionListener {
     void naturalSelection() {
         List<Snake> newSnakes = new ArrayList<>();
 
-        snakes.sort(Comparator.comparingDouble(Snake::getFitness).reversed());
+        Collections.sort(snakes, new Comparator<Snake>() {
+            public int compare(Snake a, Snake b) {
+                return Double.compare(b.getFitness(), a.getFitness());
+            }
+        });
         setBestSnake();
         calculateFitnessSum();
 
@@ -533,7 +534,11 @@ public class Board extends JPanel implements ActionListener {
                 fileName = file.getAbsolutePath();
                 try (FileOutputStream fout = new FileOutputStream(fileName);
                      ObjectOutputStream oos = new ObjectOutputStream(fout)) {
-                    snakes.sort(Comparator.comparingDouble(Snake::getFitness).reversed());
+                    Collections.sort(snakes, new Comparator<Snake>() {
+            public int compare(Snake a, Snake b) {
+                return Double.compare(b.getFitness(), a.getFitness());
+            }
+        });
                     if (snakes.size() > 1000) {
                         List<Snake> smallerList = new ArrayList<>();
                         int i = 0;

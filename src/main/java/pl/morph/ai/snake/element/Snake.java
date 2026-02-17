@@ -9,9 +9,11 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 
 import static java.lang.Math.floor;
 import static java.lang.Math.pow;
@@ -179,35 +181,44 @@ public class Snake implements Serializable {
     }
 
     private void randomApple() {
-        appleToEat = randomizeApple();
-
-        List<XY> boardTable = populate(rand_pos_x, rand_pos_y);
+        Set<Long> occupied = new HashSet<Long>();
 
         for (int i = 0; i < length; i++) {
-            boardTable.remove(new XY(x[i] / dotSize, y[i] / dotSize));
+            occupied.add(posKey(x[i] / dotSize, y[i] / dotSize));
         }
 
         if (walls != null && !walls.isEmpty()) {
             for (Wall wall : walls) {
-                boardTable.remove(new XY(wall.getX() / dotSize, wall.getY() / dotSize));
+                occupied.add(posKey(wall.getX() / dotSize, wall.getY() / dotSize));
             }
         }
 
-        int temp = (int) (Math.random() * (boardTable.size() - 1));
+        int totalCells = rand_pos_x * rand_pos_y;
+        int freeCells = totalCells - occupied.size();
 
-        if (boardTable.size() > 0) {
-            XY xy = boardTable.get(temp);
-            appleToEat = new Apple(xy.getX() * dotSize, xy.getY() * dotSize);
+        if (freeCells > 0) {
+            int target = (int) (Math.random() * freeCells);
+            int count = 0;
+            for (int bx = 0; bx < rand_pos_x; bx++) {
+                for (int by = 0; by < rand_pos_y; by++) {
+                    if (!occupied.contains(posKey(bx, by))) {
+                        if (count == target) {
+                            appleToEat = new Apple(bx * dotSize, by * dotSize);
+                            foodList.add(appleToEat);
+                            return;
+                        }
+                        count++;
+                    }
+                }
+            }
         }
 
-
-//        for (int i = 0; i < length; i++) {
-//            while ((appleToEat.getApple_x() == x[i] && appleToEat.getApple_y() == y[i])
-//                    || wallCollide(appleToEat.getApple_x(), appleToEat.getApple_y())) {
-//                appleToEat = randomizeApple();
-//            }
-//        }
+        appleToEat = randomizeApple();
         foodList.add(appleToEat);
+    }
+
+    private static long posKey(int x, int y) {
+        return ((long) x << 32) | (y & 0xFFFFFFFFL);
     }
 
     public List<XY> populate(int maxX, int maxY) {

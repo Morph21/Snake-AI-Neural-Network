@@ -144,7 +144,6 @@ public class Scores extends JPanel implements Serializable {
 
     public synchronized void setDeadSnakes(int deadSnakes) {
         this.deadSnakes = deadSnakes;
-        repaint();
     }
 
     public int getDeadSnakes() {

@@ -191,19 +191,16 @@ public enum Direction {
 
     public static Direction random() {
         double random = Math.random();
-        if (random >0.0 && random <= 0.25) {
+        if (random < 0.25) {
             return Direction.RIGHT;
         }
-        if (random >0.25 && random <= 0.5) {
+        if (random < 0.5) {
             return Direction.LEFT;
         }
-        if (random > 0.5 && random <= 0.75) {
+        if (random < 0.75) {
             return Direction.UP;
         }
-        if (random > 0.75) {
-            return Direction.DOWN;
-        }
-        return Direction.RIGHT;
+        return Direction.DOWN;
     }
 
     public double value() {
