@@ -48,7 +48,7 @@ public class Snake implements Serializable {
     private List<Apple> foodList = new ArrayList<>();
     private int foodIterate = 0;
     private boolean bestSnake = false;
-    private Scores scores;
+    private transient Scores scores;
     private boolean wallCollide = false;
     private boolean bodyCollide = false;
 
