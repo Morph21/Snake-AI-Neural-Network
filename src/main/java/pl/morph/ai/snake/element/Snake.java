@@ -57,7 +57,7 @@ public class Snake implements Serializable {
     private int hidden_nodes = 24;
     private double mutationRate;
 
-    final int input_count = 14;
+    final int input_count = 26;
     final int output_count = 3;
 
     final int look_count = 3;
@@ -99,7 +99,7 @@ public class Snake implements Serializable {
         }
 
         snakeScore = new Score();
-        snakeScore.setScore(1);
+        snakeScore.setScore(0);
     }
 
     public Snake cloneThis() {  //clone the pl.morph.ai.snake
@@ -365,30 +365,16 @@ public class Snake implements Serializable {
     }
 
     public void calculateFitness() {  //calculate the fitness of the pl.morph.ai.snake
-//        fitness = floor(lifetime * lifetime) * pow(5, snakeScore.getScore());
-
-        if (snakeScore.getScore() < 10) {
-            fitness = floor(lifetime * lifetime) * pow(2, snakeScore.getScore());
+        int score = snakeScore.getScore();
+        if (score < 10) {
+            fitness = floor(lifetime * lifetime) * pow(2, score);
         } else {
-            fitness = floor(lifetime * lifetime);
-            fitness *= pow(2, 10);
-            fitness *= (snakeScore.getScore() - 9);
+            fitness = floor(lifetime * lifetime) * pow(2, 10) * (score - 9);
         }
+        // bonus that scales with score to reward eating over just surviving
+        fitness += pow(score, 3) * 1000;
         setHighestFitness();
     }
-
-//    public void calculateFitness() {  //calculate the fitness of the pl.morph.ai.snake
-//        fitness = 200 * snakeScore.getScore();
-//        setHighestFitness();d
-//    }
-
-//    public void calculateFitness() {  //calculate the fitness of the pl.morph.ai.snake
-//        fitness = lifetime + (pow(2, snakeScore.getScore()) + pow(snakeScore.getScore(),
-//                                                                  2.1) * 500) - (pow(snakeScore.getScore(),
-//                                                                                     1.2) * pow((0.25 * lifetime),
-//                                                                                                1.3));
-//        setHighestFitness();
-//    }
 
     private void setHighestFitness() {
         if (fitness > brain.getHighestFitness()) {
@@ -504,26 +490,23 @@ public class Snake implements Serializable {
         vision[12] = temp[1];
         vision[13] = temp[2];
 
+        temp = lookInDirection(direction.look(dotSize, Direction.TOP_LEFT));  // LEFT TOP
+        vision[14] = temp[0];
+        vision[15] = temp[1];
+        vision[16] = temp[2];
 
-//        temp = lookInDirection(direction.look(dotSize, Direction.TOP_LEFT));  // LEFT TOP
-//        vision[14] = temp[0];
-//        vision[15] = temp[1];
-//        vision[16] = temp[2];
-//
-//        temp = lookInDirection(direction.look(dotSize, Direction.TOP_RIGHT));  // RIGHT TOP
-//        vision[17] = temp[0];
-//        vision[18] = temp[1];
-//        vision[19] = temp[2];
-//        temp = lookInDirection(direction.look(dotSize, Direction.DOWN_RIGHT)); // RIGHT DOWN
-//        vision[20] = temp[0];
-//        vision[21] = temp[1];
-//        vision[22] = temp[2];
-//        temp = lookInDirection(direction.look(dotSize, Direction.DOWN_LEFT)); // LEFT DOWN
-//        vision[23] = temp[0];
-//        vision[24] = temp[1];
-//        vision[25] = temp[2];
-
-
+        temp = lookInDirection(direction.look(dotSize, Direction.TOP_RIGHT));  // RIGHT TOP
+        vision[17] = temp[0];
+        vision[18] = temp[1];
+        vision[19] = temp[2];
+        temp = lookInDirection(direction.look(dotSize, Direction.DOWN_RIGHT)); // RIGHT DOWN
+        vision[20] = temp[0];
+        vision[21] = temp[1];
+        vision[22] = temp[2];
+        temp = lookInDirection(direction.look(dotSize, Direction.DOWN_LEFT)); // LEFT DOWN
+        vision[23] = temp[0];
+        vision[24] = temp[1];
+        vision[25] = temp[2];
     }
 
     double[] lookInDirection(int[] XY) {  //look in a direction and check for food, body and wall

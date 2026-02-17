@@ -47,7 +47,7 @@ public class NeuralNetwork implements Serializable {
         }
 
         Matrix output_ip = weights[weights.length-1].dot(curr_bias);
-        Matrix output = output_ip.activate();
+        Matrix output = output_ip.softmax();
 
         return output.toArray();
     }

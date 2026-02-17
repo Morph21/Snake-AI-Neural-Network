@@ -247,6 +247,9 @@ public class Board extends JPanel implements ActionListener {
 //        }
     }
 
+    private static final int ELITISM_COUNT = 5;
+    private static final int TOURNAMENT_SIZE = 5;
+
     void naturalSelection() {
         List<Snake> newSnakes = new ArrayList<>();
 
@@ -254,130 +257,114 @@ public class Board extends JPanel implements ActionListener {
         setBestSnake();
         calculateFitnessSum();
 
+        // Add best snake clone for replay (preserves foodList for replay)
         Snake best = bestSnake.cloneForReplay();
         best.setBestSnake(true);
         best.setScores(scores);
         best.setShowIt(true);
         best.spawnApple();
-        int mutations = 0;
+        newSnakes.add(best);
 
-        newSnakes.add(best);  //add the best 9snake of the prior generation into the new generation
-        found = 0;
-
-        int safetyLimit = AISnakes * 10;
-        int iterations = 0;
-        int innerLimit = Math.max(1, (int)(snakes.size() * SAVE_SNAKE_RATIO));
-        while (newSnakes.size() < AISnakes) {
-            if (++iterations > safetyLimit) {
-                System.out.println("Warning: naturalSelection safety limit reached");
-                break;
+        // Elitism: carry top snakes unmodified (no mutation) into next generation
+        for (int i = 0; i < Math.min(ELITISM_COUNT, snakes.size()) && newSnakes.size() < AISnakes; i++) {
+            Snake elite = snakes.get(i);
+            NeuralNetwork brain = elite.getBrain().clone();
+            Snake eliteSnake = new Snake(B_WIDTH, B_HEIGHT, DELAY, humanPlaying, null, DOT_SIZE, walls);
+            eliteSnake.setBrain(brain);
+            eliteSnake.setBestSnake(false);
+            eliteSnake.setScores(null);
+            placeSnakeRandomly(eliteSnake);
+            if (!showOnlyFirstSnake) {
+                eliteSnake.setShowIt(true);
             }
-            for (int i = 0; i < innerLimit; i++) {
-                Snake child = selectParent();
-                Snake parent = selectParent();
-
-                Snake snakey = parent.cloneThis();
-                if (i == 0) {
-                    snakey = parent.cloneThis(); // dont crossover first one
-                } else {
-                    double rand = Matrix.random(0,1);
-                    if (rand < CROSSOVER_RATE) {
-                        snakey = child.crossover(parent);
-                    }
-                }
-
-
-                snakey.mutate();
-
-                NeuralNetwork brain = snakey.getBrain();
-                snakey = new Snake(B_WIDTH, B_HEIGHT, DELAY, humanPlaying, null, DOT_SIZE, walls);
-                snakey.setBrain(brain);
-                snakey.setBestSnake(false);
-                snakey.setScores(null);
-                placeSnakeRandomly(snakey);
-                if (showOnlyFirstSnake) {
-                    if (newSnakes.size() == 0) {
-                        snakey.setShowIt(true);
-                    }
-                } else {
-                    snakey.setShowIt(true);
-                }
-                snakey.spawnApple();
-                newSnakes.add(i, snakey);
-                if (newSnakes.size() == AISnakes) {
-                    break;
-                }
-            }
+            eliteSnake.spawnApple();
+            newSnakes.add(eliteSnake);
         }
-        snakes = null;
+
+        // Fill rest with crossover + mutation
+        while (newSnakes.size() < AISnakes) {
+            Snake parent1 = tournamentSelect();
+            Snake parent2 = tournamentSelect();
+
+            Snake child;
+            double rand = Matrix.random(0, 1);
+            if (rand < CROSSOVER_RATE) {
+                child = parent1.crossover(parent2);
+            } else {
+                child = parent1.cloneThis();
+            }
+
+            child.mutate();
+
+            NeuralNetwork brain = child.getBrain();
+            child = new Snake(B_WIDTH, B_HEIGHT, DELAY, humanPlaying, null, DOT_SIZE, walls);
+            child.setBrain(brain);
+            child.setBestSnake(false);
+            child.setScores(null);
+            placeSnakeRandomly(child);
+            if (!showOnlyFirstSnake) {
+                child.setShowIt(true);
+            }
+            child.spawnApple();
+            newSnakes.add(child);
+        }
+
         snakes = newSnakes;
         scores.increseGeneration();
     }
 
     void calculateFitnessSum() {  //calculate the sum of all the snakes fitnesses
         fitnessSum = 0;
-        for (int i = 0; i < snakes.size() * SAVE_SNAKE_RATIO; i++) {
-            snakes.get(i).calculateFitness();
-            fitnessSum += snakes.get(i).getFitness();
+        for (Snake snake : snakes) {
+            fitnessSum += snake.getFitness();
         }
-
-        avgFitness = fitnessSum / snakes.stream().count();
+        avgFitness = fitnessSum / snakes.size();
     }
 
-    int found = 0;
-
-//    Snake selectParent(boolean child) {  //selects a random number in range of the fitnesssum and if a pl.morph.ai.snake falls in that range then select it
-//        double rand = Matrix.random(0, fitnessSum);
-//        double summation = 0;
-//        if (bestOnly && !child) {
-//            return snakes.get(0);
-//        }
-//        for (int i = 0; i < snakes.size() * SAVE_SNAKE_RATIO; i++) {
-//            summation += snakes.get(i).getFitness();
-//            if (summation > rand) {
-//                found++;
-//                return snakes.get(i);
-//            }
-//        }
-//        return snakes.get(0);
-//    }
-
-    Snake selectParent() {  //selects a random number in range of the fitnesssum and if a pl.morph.ai.snake falls in that range then select it
-        double rand = Matrix.random(0, fitnessSum);
-        double summation = 0;
+    Snake tournamentSelect() {
         if (bestOnly) {
             return snakes.get(0);
         }
-        if (scores.getGeneration() % 100 == 0) {
-//            return snakes.get(0);
-        }
-        for (int i = 0; i < snakes.size() * SAVE_SNAKE_RATIO; i++) {
-            summation += snakes.get(i).getFitness();
-            if (summation > rand) {
-                found++;
-                return snakes.get(i);
+        int poolSize = Math.max(1, (int)(snakes.size() * SAVE_SNAKE_RATIO));
+        Snake best = null;
+        for (int i = 0; i < TOURNAMENT_SIZE; i++) {
+            int idx = (int)(Math.random() * poolSize);
+            Snake candidate = snakes.get(idx);
+            if (best == null || candidate.getFitness() > best.getFitness()) {
+                best = candidate;
             }
         }
-        return snakes.get(0);
+        return best;
     }
 
-    void setBestSnake() {  //set the best pl.morph.ai.snake of the generation
-        double max = 0;
-        int maxIndex = 0;
+    void setBestSnake() {  //set the best snake of the generation
+        int bestScoreIdx = 0;
+        double bestFitnessIdx = 0;
+        int maxIdx = 0;
         for (int i = 0; i < snakes.size(); i++) {
             Snake snake = snakes.get(i);
-            if (snake.getFitness() > max) {
-                max = snake.getFitness();
-                maxIndex = i;
+            if (snake.getScore() > snakes.get(bestScoreIdx).getScore()) {
+                bestScoreIdx = i;
+            }
+            if (snake.getFitness() > bestFitnessIdx) {
+                bestFitnessIdx = snake.getFitness();
+                maxIdx = i;
             }
         }
-        if (max > bestFitness) {
-            bestFitness = max;
-            bestSnake = snakes.get(maxIndex).cloneForReplay();
-            bestSnakeScore = snakes.get(maxIndex).getScore();
+
+        // Prefer higher score; use fitness as tiebreaker
+        int chosen = bestScoreIdx;
+        if (snakes.get(bestScoreIdx).getScore() == snakes.get(maxIdx).getScore()) {
+            chosen = maxIdx;
+        }
+
+        Snake candidate = snakes.get(chosen);
+        if (candidate.getScore() > bestSnakeScore || candidate.getFitness() > bestFitness) {
+            bestFitness = candidate.getFitness();
+            bestSnake = candidate.cloneForReplay();
+            bestSnakeScore = candidate.getScore();
         } else {
             bestSnake = bestSnake.cloneForReplay();
-
         }
     }
 

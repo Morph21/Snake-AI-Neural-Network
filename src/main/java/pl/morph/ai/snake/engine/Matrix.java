@@ -1,7 +1,7 @@
 package pl.morph.ai.snake.engine;
 
 import java.io.Serializable;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static java.lang.Math.floor;
 
@@ -88,18 +88,45 @@ public class Matrix implements Serializable {
         return Math.max(0, x);
     }
 
+    Matrix softmax() {
+        Matrix n = new Matrix(rows, cols);
+        double max = Double.NEGATIVE_INFINITY;
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                if (matrix[i][j] > max) max = matrix[i][j];
+            }
+        }
+        double sum = 0;
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                n.matrix[i][j] = Math.exp(matrix[i][j] - max);
+                sum += n.matrix[i][j];
+            }
+        }
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                n.matrix[i][j] /= sum;
+            }
+        }
+        return n;
+    }
+
     void mutate(double mutationRate) {
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 double rand = random(0,1);
                 if (rand < mutationRate) {
-                    matrix[i][j] += randomGaussian() / 5;
-
-                    if (matrix[i][j] > 1) {
-                        matrix[i][j] = 1;
-                    }
-                    if (matrix[i][j] < -1) {
-                        matrix[i][j] = -1;
+                    // 10% chance to fully reset weight for exploration
+                    if (random(0, 1) < 0.1) {
+                        matrix[i][j] = random(-1, 1);
+                    } else {
+                        matrix[i][j] += randomGaussian() / 5;
+                        if (matrix[i][j] > 1) {
+                            matrix[i][j] = 1;
+                        }
+                        if (matrix[i][j] < -1) {
+                            matrix[i][j] = -1;
+                        }
                     }
                 }
             }
@@ -135,18 +162,15 @@ public class Matrix implements Serializable {
     }
 
     private static double randomGaussian() {
-        Random r = new Random();
-        return r.nextGaussian();
+        return ThreadLocalRandom.current().nextGaussian();
     }
 
     public static double random(int from, int to) {
-        Random r = new Random();
-        return from + (to - from) * r.nextDouble();
+        return from + (to - from) * ThreadLocalRandom.current().nextDouble();
     }
 
     public static double random(double from, double to) {
-        Random r = new Random();
-        return from + (to - from) * r.nextDouble();
+        return from + (to - from) * ThreadLocalRandom.current().nextDouble();
     }
 
 
