@@ -367,8 +367,12 @@ public class Snake implements Serializable {
     }
 
     public void increaseLifeSpan() {
-        if (timeLeft < maxLife) {
+        long effectiveMax = maxLife + length * 2;
+        if (timeLeft < effectiveMax) {
             timeLeft += lifeForApple;
+            if (timeLeft > effectiveMax) {
+                timeLeft = effectiveMax;
+            }
         }
     }
 

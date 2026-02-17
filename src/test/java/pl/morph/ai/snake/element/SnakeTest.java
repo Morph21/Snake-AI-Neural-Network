@@ -247,6 +247,52 @@ class SnakeTest {
     }
 
     @Test
+    void increaseLifeSpanScalesWithLength() {
+        // Board 800x800, dotSize 10 -> maxLife = (800/10)*15 = 1200, lifeForApple = 1200
+        // Key insight: when timeLeft >= maxLife, old code adds NO time.
+        // With the fix, effectiveMax = maxLife + length*2, so for a long snake
+        // timeLeft < effectiveMax is true and time gets added.
+        int bw = 800;
+        Snake s = new Snake(bw, bw, DELAY, false, null, DOT_SIZE, Collections.<Wall>emptyList());
+        s.setStartingPosition(s.new XY(10, 10)); // pixel (100, 100)
+        s.spawnApple();
+        s.setLength(30);
+
+        // timeLeft starts at 1200 (= maxLife)
+        // Old code: timeLeft(1200) < maxLife(1200) is FALSE -> no time added. timeLeft stays 1200.
+        // New code: effectiveMax = 1200 + 30*2 = 1260. timeLeft(1200) < 1260 -> adds 1200 = 2400, capped at 1260.
+        s.increaseLifeSpan();
+
+        // Place apple unreachable so no more eating
+        s.setAppleToEat(new Apple(790, 790));
+
+        // Move in square loop to avoid walls and self-collision.
+        // Perimeter = 4*phaseLen must be > length (30). Use phaseLen=10 -> perimeter=40.
+        int moves = 0;
+        int phase = 0;
+        Direction[] dirs = {Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP};
+        int stepsInPhase = 0;
+        int phaseLen = 10;
+
+        while (s.inGame && moves < 1400) {
+            s.direction = dirs[phase % 4];
+            s.move();
+            moves++;
+            stepsInPhase++;
+            if (stepsInPhase >= phaseLen) {
+                stepsInPhase = 0;
+                phase++;
+            }
+        }
+
+        // Old code: timeLeft stayed at 1200, snake survives ~1200 moves
+        // New code: timeLeft = 1260, snake survives ~1260 moves
+        // Check that snake survived more than the old maxLife cap
+        assertTrue(moves > 1210,
+            "Snake with length 30 should survive >1210 moves after increaseLifeSpan, got " + moves);
+    }
+
+    @Test
     void checkAppleIncrementsScoreAndLength() {
         int scoreBefore = snake.getScore();
         int lengthBefore = snake.getLength();
