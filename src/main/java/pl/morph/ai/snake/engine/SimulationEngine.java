@@ -8,6 +8,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.io.*;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.*;
 
 public class SimulationEngine implements Runnable {
 
@@ -42,6 +43,8 @@ public class SimulationEngine implements Runnable {
     // Volatile flags
     private volatile boolean running;
     private volatile boolean visualMode = true;
+
+    private ExecutorService executor;
 
     private JPanel boardPanel;
     private Scores scores;
@@ -81,34 +84,71 @@ public class SimulationEngine implements Runnable {
         snake.setStartingPosition(xy);
     }
 
-    public void simulateTick() {
+    private void simulateTickParallel() throws InterruptedException {
         scores.setDeadSnakes(0);
-        for (Snake snake : snakes) {
 
+        // Collect alive snakes for parallel processing
+        final List<Snake> currentSnakes = snakes;
+        List<Snake> aliveSnakes = new ArrayList<Snake>();
+        for (Snake snake : currentSnakes) {
             if (snake.getScore() == ((B_HEIGHT / dotSize) * (B_WIDTH / dotSize)) - 1) {
                 running = false;
             }
-
             if (snake.isBestSnake()) {
                 scores.setScore((new Score()).setScore(snake.getScore()));
             }
             if (snake.inGame) {
-                snake.look();
-                snake.think();
-                snake.move();
-
-                if (snake.getScore() > highScore) {
-                    highScore = snake.getScore();
-                    scores.setHighestScore(highScore);
-                    saveWaiting = true;
-                }
-
+                aliveSnakes.add(snake);
             } else {
                 scores.incrementDeadSnakes();
             }
         }
 
-        if (scores.getDeadSnakes() >= aiSnakeCount || scores.getDeadSnakes() >= snakes.size()) {
+        // Create parallel tasks for each alive snake
+        List<Callable<Void>> tasks = new ArrayList<Callable<Void>>();
+        for (final Snake snake : aliveSnakes) {
+            tasks.add(new Callable<Void>() {
+                public Void call() {
+                    snake.look();
+                    snake.think();
+                    snake.move();
+                    return null;
+                }
+            });
+        }
+
+        // Execute all tasks in parallel and wait for completion
+        if (!tasks.isEmpty()) {
+            List<Future<Void>> futures = executor.invokeAll(tasks);
+            for (int i = 0; i < futures.size(); i++) {
+                try {
+                    futures.get(i).get();
+                } catch (ExecutionException e) {
+                    System.err.println("Snake task failed: " + e.getCause());
+                    e.getCause().printStackTrace();
+                    aliveSnakes.get(i).inGame = false;
+                }
+            }
+        }
+
+        // Count snakes that died during parallel tick
+        for (Snake snake : aliveSnakes) {
+            if (!snake.inGame) {
+                scores.incrementDeadSnakes();
+            }
+        }
+
+        // Single-threaded: update high score
+        for (Snake snake : aliveSnakes) {
+            if (snake.inGame && snake.getScore() > highScore) {
+                highScore = snake.getScore();
+                scores.setHighestScore(highScore);
+                saveWaiting = true;
+            }
+        }
+
+        // Single-threaded: check generation end
+        if (scores.getDeadSnakes() >= aiSnakeCount || scores.getDeadSnakes() >= currentSnakes.size()) {
             scores.resetScores();
             calculateFitness();
             naturalSelection();
@@ -372,21 +412,29 @@ public class SimulationEngine implements Runnable {
     }
 
     public void run() {
-        while (true) {
-            if (!running) {
-                try { Thread.sleep(50); } catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
-                continue;
+        int cores = Runtime.getRuntime().availableProcessors();
+        executor = Executors.newFixedThreadPool(cores);
+        try {
+            while (true) {
+                if (!running) {
+                    try { Thread.sleep(50); } catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
+                    continue;
+                }
+                simulateTickParallel();
+                if (visualMode && boardPanel != null) {
+                    SwingUtilities.invokeLater(new Runnable() {
+                        public void run() {
+                            boardPanel.repaint();
+                            scores.repaint();
+                        }
+                    });
+                    try { Thread.sleep(delay > 0 ? delay : 20); } catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
+                }
             }
-            simulateTick();
-            if (visualMode && boardPanel != null) {
-                SwingUtilities.invokeLater(new Runnable() {
-                    public void run() {
-                        boardPanel.repaint();
-                        scores.repaint();
-                    }
-                });
-                try { Thread.sleep(delay > 0 ? delay : 20); } catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
-            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            executor.shutdownNow();
         }
     }
 
