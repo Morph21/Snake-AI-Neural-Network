@@ -98,6 +98,10 @@ public class Scores extends JPanel implements Serializable {
         g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 180);
         msg = "Best only for crossing: " + (engine != null ? engine.isBestOnly() : false);
         g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 200);
+        if (engine != null) {
+            msg = "Mode: " + (engine.isVisualMode() ? "VISUAL" : "HEADLESS");
+            g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 220);
+        }
     }
 
     private void info(Graphics g) {
@@ -127,6 +131,8 @@ public class Scores extends JPanel implements Serializable {
         g.drawString(msg, 20, 460);
         msg = "Press 'b' tu turn on best only for crossing ";
         g.drawString(msg, 20, 480);
+        msg = "Press 'v' to toggle headless/visual mode ";
+        g.drawString(msg, 20, 500);
     }
 
     @Override
