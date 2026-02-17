@@ -1,7 +1,6 @@
 package pl.morph.ai.snake.element;
 
 import pl.morph.ai.snake.engine.NeuralNetwork;
-import pl.morph.ai.snake.page.Board;
 import pl.morph.ai.snake.page.Scores;
 
 import java.awt.*;
@@ -80,7 +79,7 @@ public class Snake implements Serializable {
         this.dotSize = dotSize;
         this.delay = delay;
         this.humanPlaying = humanPlaying;
-        this.mutationRate = Board.MUTATION_RATE;
+        this.mutationRate = 0.03;
         this.boardWidth = boardWidth;
         this.boardHeight = boardHeight;
         max_length = (boardWidth * boardHeight) / (dotSize * dotSize);

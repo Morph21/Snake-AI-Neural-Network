@@ -1,10 +1,9 @@
 package pl.morph.ai.snake.page;
 
+import pl.morph.ai.snake.engine.SimulationEngine;
+
 import javax.swing.*;
 import java.awt.*;
-import java.util.*;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class SnakeGame extends JFrame {
 
@@ -14,9 +13,11 @@ public class SnakeGame extends JFrame {
     }
 
     public static void main(String[] args) {
-        EventQueue.invokeLater(() -> {
-            JFrame ex = new SnakeGame();
-            ex.setVisible(true);
+        EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                JFrame ex = new SnakeGame();
+                ex.setVisible(true);
+            }
         });
     }
 
@@ -45,7 +46,7 @@ public class SnakeGame extends JFrame {
         JPanel ctrl = new JPanel(gridLayout);
         Scores scores = new Scores();
         ctrl.add(scores);
-        ctrl.add(new Board(scores, humanPlaying, null));
+        ctrl.add(new Board(scores));
         Container cnt = getContentPane();
 
         cnt.add(ctrl, BorderLayout.CENTER);
@@ -58,14 +59,25 @@ public class SnakeGame extends JFrame {
         mainLayout.add(scores);
 
         FlowLayout boardLayout = new FlowLayout();
+        JPanel boardContainer = new JPanel(boardLayout);
 
-        JPanel board = new JPanel(boardLayout);
-        board.add(new Board(scores, humanPlaying, AISnakesCount));
+        SimulationEngine engine = new SimulationEngine(scores, AISnakesCount, null);
+        scores.setEngine(engine);
 
-        mainLayout.add(board);
+        Board board = new Board(scores, engine);
+        engine.setBoardPanel(board);
+
+        boardContainer.add(board);
+        mainLayout.add(boardContainer);
         Container cnt = getContentPane();
 
         cnt.add(mainLayout, BorderLayout.CENTER);
+
+        // Start simulation on a daemon thread
+        engine.setRunning(true);
+        Thread simThread = new Thread(engine, "SimulationEngine");
+        simThread.setDaemon(true);
+        simThread.start();
     }
 
 }

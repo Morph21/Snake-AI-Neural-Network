@@ -1,6 +1,7 @@
 package pl.morph.ai.snake.page;
 
 import pl.morph.ai.snake.element.Score;
+import pl.morph.ai.snake.engine.SimulationEngine;
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,16 +18,18 @@ public class Scores extends JPanel implements Serializable {
     private int generation = 1;
     private int deadSnakes = 0;
 
+    private SimulationEngine engine;
+
     public Scores() {
         init();
     }
 
+    public void setEngine(SimulationEngine engine) {
+        this.engine = engine;
+    }
+
     private void init() {
         setBackground(Color.gray);
-//        setPreferredSize(new Dimension(SCORES_WIDTH, SCORES_HEIGHT));
-//        setSize(new Dimension(SCORES_WIDTH, SCORES_HEIGHT));
-//        setMaximumSize(new Dimension(SCORES_WIDTH, SCORES_HEIGHT));
-//        setMinimumSize(new Dimension(SCORES_WIDTH, SCORES_HEIGHT));
 
         score = new Score();
         highScore = new Score();
@@ -83,17 +86,17 @@ public class Scores extends JPanel implements Serializable {
         g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 60);
         msg = "Fitness: " + highestFitness;
         g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 80);
-        msg = "Average fitness: " + Board.avgFitness;
+        msg = "Average fitness: " + (engine != null ? engine.getAvgFitness() : 0);
         g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 100);
         msg = "Dead snakes: " + deadSnakes;
         g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 120);
-        msg = "Mutation rate: " + Board.MUTATION_RATE;
+        msg = "Mutation rate: " + (engine != null ? engine.getMutationRate() : 0);
         g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 140);
-        msg = "SaveSnake ratio: " + Board.SAVE_SNAKE_RATIO;
+        msg = "SaveSnake ratio: " + (engine != null ? engine.getSaveSnakeRatio() : 0);
         g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 160);
-        msg = "AutoSave: " + Board.autoSave;
+        msg = "AutoSave: " + (engine != null ? engine.isAutoSave() : false);
         g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 180);
-        msg = "Best only for crossing: " + Board.bestOnly;
+        msg = "Best only for crossing: " + (engine != null ? engine.isBestOnly() : false);
         g.drawString(msg, (SCORES_WIDTH - metr.stringWidth(msg)) / 2, 200);
     }
 
